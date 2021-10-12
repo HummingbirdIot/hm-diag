@@ -32,10 +32,10 @@ func (c Client) Call(method string, params interface{}) (result interface{}, err
 	req := Req{Id: "1", Jsonrpc: "2.0", Method: method, Params: params}
 
 	jsonBuf, _ := json.Marshal(req)
-	log.Println("jsonrpc call: ", string(jsonBuf))
+	log.Println("jsonrpc call: ", c.Url, string(jsonBuf))
 	resp, err := http.Post(c.Url, "application/json", bytes.NewReader(jsonBuf))
 	if err != nil {
-		log.Println("error resp", err)
+		log.Println("jsonrpc error resp: ", err)
 		return nil, err
 	} else {
 		log.Println("resp status: ", resp.StatusCode)

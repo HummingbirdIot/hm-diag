@@ -54,13 +54,8 @@ $ curl localhost:8090
 
 {
   "fetch_time": "2021-10-11T22:41:17.825123+08:00",
-  "info_height": 1049597,
-  "info_region": "US915",
-  "peer_addr": "/p2p/11SLTwMavXGwG9T7hogA1xErwUpLZYKQJfYYVvR4s4Kk8hyGGLb",
-  "peer_book": [
-		// ... omit
-  ]
- }
+  "data": { // omit }
+}
 
 ```
 
@@ -71,11 +66,6 @@ $ hm-diag get
 
 {
   "fetch_time": "2021-10-11T22:38:33.765549+08:00",
-  "info_height": 1049595,
-  "info_region": "US915",
-  "peer_addr": "/p2p/11SLTwMavXGwG9T7hogA1xErwUpLZYKQJfYYVvR4s4Kk8hyGGLb",
-	"peer_book": [
-		// ... omit
-  ]t
- }
+  "data": { // omit }
+}
 ```

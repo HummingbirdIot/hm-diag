@@ -1,0 +1,93 @@
+package diag
+
+import (
+	"log"
+	"time"
+
+	"xdt.com/hm-diag/hardware"
+	"xdt.com/hm-diag/miner"
+	// "xdt.com/hm-diag/miner"
+)
+
+// func getMinerData() CacheData {
+// 	fetchTime := time.Now()
+// 	res := miner.FetchData(minerUrl)
+// 	res["fetch_time"] = fetchTime
+// 	return res
+// }
+
+type TaskConfig struct {
+	MinerUrl string
+}
+
+type Task struct {
+	Config     TaskConfig
+	time       time.Time
+	data       interface{}
+	taskTicker *time.Ticker
+	quitTask   chan struct{}
+}
+
+type TaskData struct {
+	FetchTime time.Time   `json:"fetch_time"`
+	Data      interface{} `json:"data"`
+}
+
+func (task *Task) GetData() TaskData {
+	return TaskData{Data: task.data, FetchTime: task.time}
+}
+
+func (task *Task) StartTask(runRightNow bool) {
+	log.Printf("task start")
+	if task.quitTask != nil {
+		close(task.quitTask)
+	}
+	task.taskTicker = time.NewTicker(20 * time.Second)
+	quitTask := make(chan struct{})
+	go func() {
+		for {
+			select {
+			case <-task.taskTicker.C:
+				task.DoTask()
+			case <-quitTask:
+				task.taskTicker.Stop()
+			}
+		}
+	}()
+
+	if runRightNow {
+		task.DoTask()
+	}
+}
+
+func (task *Task) Stop() {
+	close(task.quitTask)
+}
+
+func (task *Task) DoTask() {
+	log.Println("to do task...", task.Config.MinerUrl)
+	resMap := make(map[string]interface{})
+
+	m := miner.FetchData(task.Config.MinerUrl)
+	resMap["miner"] = m
+
+	resMap["hardware"] = GetHardwareInfo()
+
+	task.data = resMap
+	task.time = time.Now()
+
+	log.Println("task done")
+}
+
+func GetHardwareInfo() map[string]interface{} {
+	resMap := make(map[string]interface{})
+	wifi := hardware.GetWifiInfo()
+	resMap["wifi"] = wifi
+
+	cpuTemp, _ := hardware.GetCpuTemp()
+	resMap["cpu_temp"] = cpuTemp
+
+	cpuFreq, _ := hardware.GetCpuFreq()
+	resMap["cpu_freq"] = cpuFreq
+	return resMap
+}
