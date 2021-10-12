@@ -17,7 +17,8 @@ import (
 // }
 
 type TaskConfig struct {
-	MinerUrl string
+	MinerUrl    string
+	IntervalSec uint
 }
 
 type Task struct {
@@ -38,11 +39,11 @@ func (task *Task) GetData() TaskData {
 }
 
 func (task *Task) StartTask(runRightNow bool) {
-	log.Printf("task start")
+	log.Printf("task scheduler start")
 	if task.quitTask != nil {
 		close(task.quitTask)
 	}
-	task.taskTicker = time.NewTicker(20 * time.Second)
+	task.taskTicker = time.NewTicker(time.Duration(task.Config.IntervalSec) * time.Second)
 	quitTask := make(chan struct{})
 	go func() {
 		for {
@@ -65,7 +66,7 @@ func (task *Task) Stop() {
 }
 
 func (task *Task) DoTask() {
-	log.Println("to do task...", task.Config.MinerUrl)
+	log.Println("to do task...  =======================>")
 	resMap := make(map[string]interface{})
 
 	m := miner.FetchData(task.Config.MinerUrl)
@@ -76,7 +77,7 @@ func (task *Task) DoTask() {
 	task.data = resMap
 	task.time = time.Now()
 
-	log.Println("task done")
+	log.Println("task done <=======================")
 }
 
 func GetHardwareInfo() map[string]interface{} {

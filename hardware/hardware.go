@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/godbus/dbus/v5"
+	"xdt.com/hm-diag/util"
 )
 
 func GetWifiInfo() map[string]interface{} {
@@ -26,7 +27,8 @@ func GetWifiInfo() map[string]interface{} {
 	resMap := make(map[string]interface{})
 	for k, v := range r {
 		a := v.Value()
-		resMap[k] = a
+		ka := util.FisrtLower(k)
+		resMap[ka] = a
 	}
 
 	return resMap

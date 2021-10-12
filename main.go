@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -11,10 +12,13 @@ import (
 	"xdt.com/hm-diag/diag"
 )
 
-var (
-	port     string
-	minerUrl string
-)
+type Opt struct {
+	Port        string
+	MinerUrl    string
+	IntervalSec uint
+}
+
+var opt Opt
 
 func usage() {
 	fmt.Fprintf(os.Stdout, "Helium Diagnostic\n")
@@ -27,8 +31,9 @@ func usage() {
 }
 
 func init() {
-	flag.StringVar(&port, "p", "8090", "server listening port")
-	flag.StringVar(&minerUrl, "m", "http://127.0.0.1:4467", "miner http url")
+	flag.StringVar(&opt.Port, "p", "8090", "server listening port")
+	flag.StringVar(&opt.MinerUrl, "m", "http://127.0.0.1:4467", "miner http url")
+	flag.UintVar(&opt.IntervalSec, "i", 30, "data refresh interval in seconds")
 	flag.Usage = usage
 }
 
@@ -36,7 +41,7 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-type", "application/json")
 	d := task.GetData()
 	j, _ := json.MarshalIndent(d, "", "  ")
-	fmt.Fprintf(w, string(j))
+	fmt.Fprint(w, string(j))
 
 	// t1, err := template.ParseFiles("tmpl/index.html")
 	// if err != nil {
@@ -49,9 +54,11 @@ var task diag.Task
 
 func main() {
 	flag.Parse()
-	task = diag.Task{Config: diag.TaskConfig{MinerUrl: minerUrl}}
+	optJson, _ := json.Marshal(opt)
+	log.Println("options: ", string(optJson))
+	task = diag.Task{Config: diag.TaskConfig{MinerUrl: opt.MinerUrl, IntervalSec: opt.IntervalSec}}
 	if flag.Arg(0) == "get" {
-		// log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 		task.DoTask()
 		s, _ := json.MarshalIndent(task.GetData(), "", "  ")
 		os.Stdout.WriteString(string(s))
@@ -59,6 +66,6 @@ func main() {
 	}
 	go task.StartTask(true)
 	http.HandleFunc("/", homeHandler)
-	log.Println("server listening on port " + port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Println("server listening on port " + opt.Port)
+	log.Fatal(http.ListenAndServe(":"+opt.Port, nil))
 }
