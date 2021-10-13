@@ -1,4 +1,4 @@
-package diag
+package main
 
 import (
 	"log"
@@ -6,15 +6,7 @@ import (
 
 	"xdt.com/hm-diag/hardware"
 	"xdt.com/hm-diag/miner"
-	// "xdt.com/hm-diag/miner"
 )
-
-// func getMinerData() CacheData {
-// 	fetchTime := time.Now()
-// 	res := miner.FetchData(minerUrl)
-// 	res["fetch_time"] = fetchTime
-// 	return res
-// }
 
 type TaskConfig struct {
 	MinerUrl    string

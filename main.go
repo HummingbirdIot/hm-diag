@@ -8,8 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-
-	"xdt.com/hm-diag/diag"
 )
 
 type Opt struct {
@@ -50,13 +48,13 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	// t1.Execute(w, d)
 }
 
-var task diag.Task
+var task Task
 
 func main() {
 	flag.Parse()
 	optJson, _ := json.Marshal(opt)
 	log.Println("options: ", string(optJson))
-	task = diag.Task{Config: diag.TaskConfig{MinerUrl: opt.MinerUrl, IntervalSec: opt.IntervalSec}}
+	task = Task{Config: TaskConfig{MinerUrl: opt.MinerUrl, IntervalSec: opt.IntervalSec}}
 	if flag.Arg(0) == "get" {
 		log.SetOutput(io.Discard)
 		task.DoTask()
