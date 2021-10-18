@@ -4,9 +4,16 @@ import (
 	"log"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/godbus/dbus/v5"
 	"xdt.com/hm-diag/util"
+
+	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/disk"
+	"github.com/shirou/gopsutil/v3/host"
+	"github.com/shirou/gopsutil/v3/mem"
+	unet "github.com/shirou/gopsutil/v3/net"
 )
 
 func GetWifiInfo() map[string]interface{} {
@@ -56,4 +63,29 @@ func GetCpuTemp() (string, error) {
 	str := strings.Split(strings.ReplaceAll(string(data), "\n", ""), "=")[1]
 	log.Println("cpu temp", str)
 	return str, nil
+}
+
+func GetInfo() map[string]interface{} {
+
+	res := make(map[string]interface{})
+
+	hostInfo, _ := host.Info()
+	res["host"] = hostInfo
+
+	memInfo, _ := mem.VirtualMemory()
+	res["mem"] = memInfo
+
+	netInterface, _ := unet.Interfaces()
+	res["net_interface"] = netInterface
+
+	diskInfo, _ := disk.Usage("/")
+	res["disk"] = diskInfo
+
+	cpuPercent, _ := cpu.Percent(1*time.Second, true)
+	res["cpu_percent"] = cpuPercent
+
+	cpuInfo, _ := cpu.Info()
+	res["cpu_info"] = cpuInfo
+
+	return res
 }

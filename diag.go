@@ -73,7 +73,10 @@ func (task *Task) DoTask() {
 }
 
 func GetHardwareInfo() map[string]interface{} {
-	resMap := make(map[string]interface{})
+	// resMap := make(map[string]interface{})
+
+	resMap := hardware.GetInfo()
+
 	wifi := hardware.GetWifiInfo()
 	resMap["wifi"] = wifi
 
@@ -82,5 +85,6 @@ func GetHardwareInfo() map[string]interface{} {
 
 	cpuFreq, _ := hardware.GetCpuFreq()
 	resMap["cpu_freq"] = cpuFreq
+
 	return resMap
 }

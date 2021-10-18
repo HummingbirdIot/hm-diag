@@ -23,8 +23,14 @@ func FetchData(url string) map[string]interface{} {
 	res, _ = client.Call("peer_book", PeerBookParams{Addr: "self"})
 	resMap["peer_book"] = res
 
-	// res, _ = client.Call("info_summary", nil)
-	// resMap["info_summary"] = res
+	res, _ = client.Call("info_p2p_status", nil)
+	resMap["info_p2p_status"] = res
+
+	res, _ = client.Call("info_summary", nil)
+	resMap["info_summary"] = res
+
+	res, _ = client.Call("print_keys", nil)
+	resMap["print_keys"] = res
 
 	return resMap
 }
