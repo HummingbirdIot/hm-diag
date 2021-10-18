@@ -1,0 +1,11 @@
+[Unit]
+Description=hm-diag - helium diag tool
+Documentation=https://xdt.com/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/local/bin/hm-diag
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+set -ex
+
+svc=hm-diag
+
+systemctl stop ${svc}.service
+systemctl disable ${svc}.service
+
+exit 0

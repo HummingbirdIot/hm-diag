@@ -1,0 +1,8 @@
+#!/bin/sh
+
+set -ex
+
+systemctl daemon-reload
+systemctl reset-failed
+
+exit 0

@@ -1,0 +1,10 @@
+Package: hm-diag
+Version: {version}
+Section: utils
+Priority: optional
+Depends: 
+Suggests: 
+Architecture: arm64
+Maintainer: xdt.com
+Provides: xdt
+Description: helium diagnostic tools for hummingbird

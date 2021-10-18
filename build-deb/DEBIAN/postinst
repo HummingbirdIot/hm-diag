@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -ex
+
+svc=hm-diag
+
+# Start service 
+systemctl enable ${svc}.service
+systemctl daemon-reload
+systemctl start ${svc}.service
+
+exit 0
