@@ -9,6 +9,12 @@ then
 	export GOARCH=arm64
 fi
 
+if [ -z "$version" ]
+then
+	echo "environment varialble \"version\" is not set"
+	exit 1
+fi
+
 # Set version
 sed -i "s/{version}/${version}/g" ./build-deb/DEBIAN/control
 
@@ -17,7 +23,8 @@ sed -i "s/{version}/${version}/g" ./build-deb/DEBIAN/control
 
 go build
 
-mkdir -p ./build-deb/usr/local/bin
+
+rm -fr ./build-deb/usr/local/bin/.gitkeep
 rm -fr ./build-deb/usr/local/bin/*
 cp hm-diag ./build-deb/usr/local/bin
 
