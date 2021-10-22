@@ -21,10 +21,10 @@ var opt Opt
 
 func usage() {
 	fmt.Fprintf(os.Stdout, "Helium Diagnostic\n")
-	fmt.Fprintf(os.Stdout, "Usage: [options] [get | server] \n\n")
+	fmt.Fprintf(os.Stdout, "Usage: hm-diag [options] [get|server] \n\n")
 	fmt.Fprintf(os.Stdout, "Subcommand:\n")
-	fmt.Fprintf(os.Stdout, "  get\n	get info to stdout\n")
-	fmt.Fprintf(os.Stdout, "  server\n	run http server, can omit it\n")
+	fmt.Fprintf(os.Stdout, "  get\n    get info to stdout\n")
+	fmt.Fprintf(os.Stdout, "  server\n    run http server, can omit it\n")
 	fmt.Fprintf(os.Stdout, "Options:\n")
 	flag.PrintDefaults()
 }
@@ -53,8 +53,6 @@ var task Task
 
 func main() {
 	flag.Parse()
-	optJson, _ := json.Marshal(opt)
-	log.Println("options: ", string(optJson))
 	task = Task{Config: TaskConfig{MinerUrl: opt.MinerUrl, IntervalSec: opt.IntervalSec}}
 	if flag.Arg(0) == "get" {
 		log.SetOutput(io.Discard)
@@ -62,9 +60,14 @@ func main() {
 		s, _ := json.MarshalIndent(task.GetData(), "", "  ")
 		os.Stdout.WriteString(string(s))
 		return
+	} else if flag.Arg(0) == "server" || flag.Arg(0) == "" {
+		optJson, _ := json.Marshal(opt)
+		log.Println("options: ", string(optJson))
+		go task.StartTask(true)
+		http.HandleFunc("/", homeHandler)
+		log.Println("server listening on port " + opt.Port)
+		log.Fatal(http.ListenAndServe(":"+opt.Port, nil))
+	} else {
+		flag.Usage()
 	}
-	go task.StartTask(true)
-	http.HandleFunc("/", homeHandler)
-	log.Println("server listening on port " + opt.Port)
-	log.Fatal(http.ListenAndServe(":"+opt.Port, nil))
 }
