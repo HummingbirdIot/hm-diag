@@ -29,8 +29,8 @@ func FetchData(url string) map[string]interface{} {
 	res, _ = client.Call("info_summary", nil)
 	resMap["info_summary"] = res
 
-	res, _ = client.Call("print_keys", nil)
-	resMap["print_keys"] = res
+	// res, _ = client.Call("print_keys", nil)
+	// resMap["print_keys"] = res
 
 	return resMap
 }

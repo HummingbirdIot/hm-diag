@@ -49,6 +49,11 @@ func (task *Task) StartTask(runRightNow bool) {
 	}()
 
 	if runRightNow {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Println("do task error", r)
+			}
+		}()
 		task.DoTask()
 	}
 }
