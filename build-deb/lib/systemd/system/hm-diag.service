@@ -5,6 +5,8 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
+Restart=always
+RestartSec=10
 ExecStart=/usr/local/bin/hm-diag
 
 [Install]
