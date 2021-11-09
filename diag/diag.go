@@ -16,18 +16,34 @@ type TaskConfig struct {
 type Task struct {
 	Config     TaskConfig
 	time       time.Time
-	data       interface{}
+	data       map[string]interface{}
 	taskTicker *time.Ticker
 	quitTask   chan struct{}
 }
 
 type TaskData struct {
-	FetchTime time.Time   `json:"fetch_time"`
-	Data      interface{} `json:"data"`
+	FetchTime time.Time              `json:"fetch_time"`
+	Data      map[string]interface{} `json:"data"`
 }
 
 func (task *Task) GetData() TaskData {
 	return TaskData{Data: task.data, FetchTime: task.time}
+}
+
+func (task *Task) GetHardwareInfo() TaskData {
+	var data map[string]interface{}
+	if task.data != nil {
+		data = task.data["hardware"].(map[string]interface{})
+	}
+	return TaskData{Data: data, FetchTime: task.time}
+}
+
+func (task *Task) GetMinerInfo() TaskData {
+	var data map[string]interface{}
+	if task.data != nil {
+		data = task.data["miner"].(map[string]interface{})
+	}
+	return TaskData{Data: data, FetchTime: task.time}
 }
 
 func (task *Task) StartTask(runRightNow bool) {
@@ -63,7 +79,7 @@ func (task *Task) DoTask() {
 			log.Println("do task error", r)
 		}
 	}()
-	defer log.Println("to do task...  =======================>")
+	defer log.Println("to do task...")
 	resMap := make(map[string]interface{})
 
 	m := miner.FetchData(task.Config.MinerUrl)
@@ -74,7 +90,7 @@ func (task *Task) DoTask() {
 	task.data = resMap
 	task.time = time.Now()
 
-	log.Println("task done <=======================")
+	log.Println("task done")
 }
 
 func GetHardwareInfo() map[string]interface{} {

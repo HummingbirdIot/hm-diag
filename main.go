@@ -39,8 +39,27 @@ func init() {
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		w.WriteHeader(404)
+		return
+	}
 	w.Header().Add("Content-type", "application/json")
 	d := task.GetData()
+	d.Data["a-notice"] = `do not use this api path "/" to integrate, use api under path "api/"`
+	j, _ := json.MarshalIndent(d, "", "  ")
+	fmt.Fprint(w, string(j))
+}
+
+func minerInfoHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-type", "application/json")
+	d := task.GetMinerInfo()
+	j, _ := json.MarshalIndent(d, "", "  ")
+	fmt.Fprint(w, string(j))
+}
+
+func hardwareInfoHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Add("Content-type", "application/json")
+	d := task.GetHardwareInfo()
 	j, _ := json.MarshalIndent(d, "", "  ")
 	fmt.Fprint(w, string(j))
 }
@@ -61,6 +80,8 @@ func main() {
 		log.Println("options: ", string(optJson))
 		go task.StartTask(true)
 		http.HandleFunc("/", homeHandler)
+		http.HandleFunc("/api/v1/hardware", hardwareInfoHandler)
+		http.HandleFunc("/api/v1/miner", minerInfoHandler)
 		log.Println("server listening on port " + opt.Port)
 		log.Fatal(http.ListenAndServe(":"+opt.Port, nil))
 	} else {
