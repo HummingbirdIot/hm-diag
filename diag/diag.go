@@ -1,11 +1,11 @@
-package main
+package diag
 
 import (
 	"log"
 	"time"
 
-	"xdt.com/hm-diag/hardware"
-	"xdt.com/hm-diag/miner"
+	"xdt.com/hm-diag/diag/hardware"
+	"xdt.com/hm-diag/diag/miner"
 )
 
 type TaskConfig struct {
@@ -49,11 +49,6 @@ func (task *Task) StartTask(runRightNow bool) {
 	}()
 
 	if runRightNow {
-		defer func() {
-			if r := recover(); r != nil {
-				log.Println("do task error", r)
-			}
-		}()
 		task.DoTask()
 	}
 }
@@ -63,7 +58,12 @@ func (task *Task) Stop() {
 }
 
 func (task *Task) DoTask() {
-	log.Println("to do task...  =======================>")
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("do task error", r)
+		}
+	}()
+	defer log.Println("to do task...  =======================>")
 	resMap := make(map[string]interface{})
 
 	m := miner.FetchData(task.Config.MinerUrl)

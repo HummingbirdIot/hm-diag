@@ -9,6 +9,8 @@ import (
 
 	"net/http"
 	"os"
+
+	"xdt.com/hm-diag/diag"
 )
 
 type Opt struct {
@@ -41,19 +43,13 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 	d := task.GetData()
 	j, _ := json.MarshalIndent(d, "", "  ")
 	fmt.Fprint(w, string(j))
-
-	// t1, err := template.ParseFiles("tmpl/index.html")
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// t1.Execute(w, d)
 }
 
-var task Task
+var task diag.Task
 
 func main() {
 	flag.Parse()
-	task = Task{Config: TaskConfig{MinerUrl: opt.MinerUrl, IntervalSec: opt.IntervalSec}}
+	task = diag.Task{Config: diag.TaskConfig{MinerUrl: opt.MinerUrl, IntervalSec: opt.IntervalSec}}
 	if flag.Arg(0) == "get" {
 		log.SetOutput(io.Discard)
 		task.DoTask()

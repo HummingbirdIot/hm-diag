@@ -1,7 +1,7 @@
 package miner
 
 import (
-	"xdt.com/hm-diag/jsonrpc"
+	"xdt.com/hm-diag/diag/jsonrpc"
 )
 
 type PeerBookParams struct {

@@ -1,7 +1,6 @@
 package hardware
 
 import (
-	"log"
 	"os/exec"
 	"strings"
 	"time"
@@ -48,7 +47,6 @@ func GetCpuFreq() (interface{}, error) {
 		return "", err
 	}
 	str := strings.Split(strings.ReplaceAll(string(data), "\n", ""), "=")[1]
-	log.Println("cpu current frequence", str)
 	return str, nil
 
 }
@@ -61,7 +59,6 @@ func GetCpuTemp() (string, error) {
 	}
 
 	str := strings.Split(strings.ReplaceAll(string(data), "\n", ""), "=")[1]
-	log.Println("cpu temp", str)
 	return str, nil
 }
 
@@ -79,13 +76,10 @@ func GetInfo() map[string]interface{} {
 	res["net_interface"] = netInterface
 
 	diskInfo, _ := disk.Usage("/")
-	res["disk"] = diskInfo
+	res["disk"] = [1]interface{}{diskInfo}
 
 	cpuPercent, _ := cpu.Percent(1*time.Second, true)
 	res["cpu_percent"] = cpuPercent
-
-	cpuInfo, _ := cpu.Info()
-	res["cpu_info"] = cpuInfo
 
 	return res
 }
