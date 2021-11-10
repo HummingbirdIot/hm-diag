@@ -6,15 +6,17 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"strconv"
 
 	"net/http"
 	"os"
 
 	"xdt.com/hm-diag/diag"
+	"xdt.com/hm-diag/regist"
 )
 
 type Opt struct {
-	Port        string
+	Port        int
 	MinerUrl    string
 	IntervalSec uint
 }
@@ -32,58 +34,34 @@ func usage() {
 }
 
 func init() {
-	flag.StringVar(&opt.Port, "p", "8090", "server listening port")
+	flag.IntVar(&opt.Port, "p", 8090, "server listening port")
 	flag.StringVar(&opt.MinerUrl, "m", "http://127.0.0.1:4467", "miner http url")
 	flag.UintVar(&opt.IntervalSec, "i", 30, "data refresh interval in seconds")
 	flag.Usage = usage
 }
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		w.WriteHeader(404)
-		return
-	}
-	w.Header().Add("Content-type", "application/json")
-	d := task.GetData()
-	d.Data["a-notice"] = `do not use this api path "/" to integrate, use api under path "api/"`
-	j, _ := json.MarshalIndent(d, "", "  ")
-	fmt.Fprint(w, string(j))
-}
-
-func minerInfoHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Content-type", "application/json")
-	d := task.GetMinerInfo()
-	j, _ := json.MarshalIndent(d, "", "  ")
-	fmt.Fprint(w, string(j))
-}
-
-func hardwareInfoHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Add("Content-type", "application/json")
-	d := task.GetHardwareInfo()
-	j, _ := json.MarshalIndent(d, "", "  ")
-	fmt.Fprint(w, string(j))
-}
-
-var task diag.Task
+var task *diag.Task
 
 func main() {
 	flag.Parse()
-	task = diag.Task{Config: diag.TaskConfig{MinerUrl: opt.MinerUrl, IntervalSec: opt.IntervalSec}}
+	task = &diag.Task{Config: diag.TaskConfig{MinerUrl: opt.MinerUrl, IntervalSec: opt.IntervalSec}}
 	if flag.Arg(0) == "get" {
 		log.SetOutput(io.Discard)
-		task.DoTask()
-		s, _ := json.MarshalIndent(task.GetData(), "", "  ")
+		task.Do()
+		s, _ := json.MarshalIndent(task.Data(), "", "  ")
 		os.Stdout.WriteString(string(s))
 		return
 	} else if flag.Arg(0) == "server" || flag.Arg(0) == "" {
 		optJson, _ := json.Marshal(opt)
 		log.Println("options: ", string(optJson))
-		go task.StartTask(true)
-		http.HandleFunc("/", homeHandler)
-		http.HandleFunc("/api/v1/hardware", hardwareInfoHandler)
-		http.HandleFunc("/api/v1/miner", minerInfoHandler)
-		log.Println("server listening on port " + opt.Port)
-		log.Fatal(http.ListenAndServe(":"+opt.Port, nil))
+		go task.StartTaskJob(true)
+		register := &regist.Register{ApiPort: opt.Port, RegistryApiPort: 6753, ReistIntervalSec: 30}
+		go register.StartRegistJob()
+
+		route(task, register)
+
+		log.Println("server listening on port " + strconv.Itoa(opt.Port))
+		log.Fatal(http.ListenAndServe(":"+strconv.Itoa(opt.Port), nil))
 	} else {
 		flag.Usage()
 	}

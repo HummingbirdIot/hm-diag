@@ -1,6 +1,8 @@
-package hardware
+package device
 
 import (
+	"log"
+	"net"
 	"os/exec"
 	"strings"
 	"time"
@@ -48,7 +50,6 @@ func GetCpuFreq() (interface{}, error) {
 	}
 	str := strings.Split(strings.ReplaceAll(string(data), "\n", ""), "=")[1]
 	return str, nil
-
 }
 
 func GetCpuTemp() (string, error) {
@@ -70,16 +71,60 @@ func GetInfo() map[string]interface{} {
 	res["host"] = hostInfo
 
 	memInfo, _ := mem.VirtualMemory()
-	res["mem"] = memInfo
+	res["mem"] = map[string]interface{}{
+		"total":     memInfo.Total,
+		"available": memInfo.Available,
+		"free":      memInfo.Free,
+		"used":      memInfo.Used,
+		"buffers":   memInfo.Buffers,
+		"cached":    memInfo.Cached,
+		"shared":    memInfo.Shared,
+	}
 
 	netInterface, _ := unet.Interfaces()
-	res["net_interface"] = netInterface
+	res["netInterface"] = netInterface
 
 	diskInfo, _ := disk.Usage("/")
-	res["disk"] = [1]interface{}{diskInfo}
+	res["disk"] = []interface{}{
+		map[string]interface{}{
+			"path":        diskInfo.Path,
+			"fstype":      diskInfo.Fstype,
+			"total":       diskInfo.Total,
+			"free":        diskInfo.Free,
+			"used":        diskInfo.Used,
+			"usedPercent": diskInfo.UsedPercent,
+		},
+	}
 
-	cpuPercent, _ := cpu.Percent(1*time.Second, true)
-	res["cpu_percent"] = cpuPercent
+	cpuPercent, _ := cpu.Percent(2*time.Second, true)
+	res["cpuPercent"] = cpuPercent
 
 	return res
+}
+
+func GetSn() (string, error) {
+	cmd := exec.Command("cat", "/boot/serialno")
+	data, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(data)), nil
+
+}
+func GetAddrs(name string) (net.HardwareAddr, []string, error) {
+	inet, err := net.InterfaceByName(name)
+	if err != nil {
+		log.Println("[error] can't get net interface of the machine")
+		return nil, nil, err
+	}
+	addrs, err := inet.Addrs()
+	if err != nil {
+		log.Println("[error] can't get ip address of the machine")
+		return nil, nil, err
+	}
+	ips := make([]string, len(addrs))
+	for i, addr := range addrs {
+		ips[i] = addr.String()
+	}
+	return inet.HardwareAddr, ips, nil
 }
