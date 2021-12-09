@@ -8,9 +8,9 @@ import (
 	"log"
 	"strconv"
 
-	"net/http"
 	"os"
 
+	"github.com/gin-gonic/gin"
 	"xdt.com/hm-diag/diag"
 	"xdt.com/hm-diag/regist"
 )
@@ -19,6 +19,7 @@ type Opt struct {
 	Port        int
 	MinerUrl    string
 	IntervalSec uint
+	GitRepoDir  string
 }
 
 var opt Opt
@@ -36,6 +37,7 @@ func usage() {
 func init() {
 	flag.IntVar(&opt.Port, "p", 8090, "server listening port")
 	flag.StringVar(&opt.MinerUrl, "m", "http://127.0.0.1:4467", "miner http url")
+	flag.StringVar(&opt.GitRepoDir, "gitRepo", "/home/pi/hnt_iot_release", "program docker-compose working git dir")
 	flag.UintVar(&opt.IntervalSec, "i", 30, "data refresh interval in seconds")
 	flag.Usage = usage
 }
@@ -58,10 +60,10 @@ func main() {
 		register := &regist.Register{ApiPort: opt.Port, RegistryApiPort: 6753, ReistIntervalSec: 30}
 		go register.StartRegistJob()
 
-		route(task, register)
-
+		r := gin.Default()
+		route(r, task, register)
 		log.Println("server listening on port " + strconv.Itoa(opt.Port))
-		log.Fatal(http.ListenAndServe(":"+strconv.Itoa(opt.Port), nil))
+		r.Run(fmt.Sprintf(":%d", opt.Port))
 	} else {
 		flag.Usage()
 	}
