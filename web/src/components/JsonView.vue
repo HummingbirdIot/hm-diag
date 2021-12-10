@@ -27,12 +27,16 @@ function fetchData() {
     message: '加载中...',
     forbidClick: true,
     loadingType: 'spinner',
+    duration: 10 * 1000
   });
   fetch(api)
     .then(r => r.json())
     .then(r => {
-      data.value = JSON.stringify(r, null, 2)
       Toast.clear()
+      data.value = JSON.stringify(r, null, 2)
+    })
+    .catch(r => {
+      Toast.fail("error :" + r)
     })
 }
 

@@ -26,7 +26,7 @@
 
 <script setup>
 import { ref } from "vue"
-import { CellGroup, Cell, Field, Button, NoticeBar, Toast } from 'vant'
+import { CellGroup, Cell, Field, Button, Dialog, Toast } from 'vant'
 
 // item: gitRepo or gitRelease
 function fetchGitProxy(item) {
@@ -42,7 +42,7 @@ const rrp = ref("")
 
 fetchGitProxy("gitRepo").then(rpRe => {
   if (rpRe == null || rpRe.code !== 200) {
-    Toast.fail("load git repository proxy error")
+    Dialog.alert({ message: "load git repository proxy error" })
   } else {
     rp.value = rpRe.data?.value ? rpRe.data.value : ""
     console.log(rp.value)
@@ -50,7 +50,7 @@ fetchGitProxy("gitRepo").then(rpRe => {
 })
 fetchGitProxy("gitRelease").then(rrpRe => {
   if (rrpRe == null || rrpRe.code !== 200) {
-    Toast.fail("load git release file proxy error")
+    Dialog.alert({ message: "load git release file proxy error" })
   } else {
     rrp.value = rrpRe.data?.value ? rrpRe.data.value : ""
     console.log(rrp.value)
@@ -59,28 +59,37 @@ fetchGitProxy("gitRelease").then(rrpRe => {
 
 function confirm(item) {
   const v = item == 'gitRepo' ? rp.value : rrp.value
-  const u = getUrl(v)
+  let u = v
+  if (u != "") {
+    u = getUrl(v)
+  }
   const type = item == 'gitRepo' ? 'mirror' : 'urlPrefix';
   fetch(`/api/v1/config/proxy?item=${item}`, {
     method: 'POST',
     body: JSON.stringify({ type, value: u })
-  }).then(r => r.json())
+  })
+    .then(r => r.json())
     .then(r => {
       if (r && r.code == 200) {
         Toast.success("set success")
       } else {
-        Toast.fail("set error :" + r?.message)
+        Dialog.alert({ message: "set error :" + r?.message })
       }
     })
 }
 
 function getUrl(v) {
-  const url = new URL(v)
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    Toast.fail("wrong url, scheme should be http or https")
-    return
+  try {
+    const url = new URL(v)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      Dialog.alert({ message: "wrong url, scheme should be http or https" })
+      return null
+    }
+    return url.origin + '/'
+  } catch (err) {
+    Dialog.alert({ message: "set error :" + r?.message })
+    return null
   }
-  return url.origin + '/'
 }
 
 </script>

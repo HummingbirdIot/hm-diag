@@ -10,7 +10,7 @@ func ResyncMiner() error {
 	cmd := exec.Command("bash", "/home/pi/hnt_iot/trim_miner.sh")
 	data, err := cmd.Output()
 	if err != nil {
-		log.Println("[error] resync miner error:", string(data))
+		log.Println("[error] resync miner error:", err.Error(), string(data))
 		return err
 	}
 	log.Println("resync miner output:", string(data))
