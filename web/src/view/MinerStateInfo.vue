@@ -6,7 +6,7 @@
 import { ref } from 'vue';
 import JsonView from '../components/JsonView.vue'
 
-const api = ref("/api/v1/miner/state?cache=true")
+const api = ref("/api/v1/miner/state")
 
 </script>
 
