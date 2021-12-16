@@ -14,7 +14,16 @@
 
   <CellGroup>
     <Cell title="Generate snapshot">
-      <Button size="small" type="primary" plain @click="snapshot">Download</Button>
+      <Button size="small" type="primary" plain @click="snapshot">Snapshot</Button>
+    </Cell>
+    <Cell :title="'Snapshot latest file : \r\n' + state.time">
+      <Button
+        v-if="state.state == 'done'"
+        size="small"
+        type="primary"
+        plain
+        @click="download"
+      >Download</Button>
     </Cell>
     <Cell title="Upload snapshot">
       <input id="file" class="hidden" ref="file" type="file" @change="handleFileChange" />
@@ -27,13 +36,14 @@
 </template>
 
 <script setup>
-import { ref } from "vue"
+import { reactive, ref } from "vue"
 import { CellGroup, Cell, Button, Toast, Dialog, Progress, Notify } from 'vant'
 import * as axios from "axios"
 
 const file = ref(null)
 const showProgress = ref(false)
 const progress = ref(0)
+const state = reactive({ state: "unknown", file: "", time: "" })
 
 function reboot() {
   fetch('/api/v1/device/reboot', { method: 'POST' })
@@ -72,19 +82,40 @@ function resync() {
     })
 }
 
+// open(`/api/v1/miner/snapshot/file/${r.data.file}`, "_blank")
+
 function snapshot() {
   fetch("/api/v1/miner/snapshot", {
     method: "POST"
   }).then(r => r.json())
     .then(r => {
       console.log("snapshot res:", r)
-      Dialog.alert({ message: "success snapshot" })
-      open(`/api/v1/miner/snapshot/file/${r.data.file}`, "_blank")
+      Dialog.alert({ message: "request success, check result after severial minuts" })
     })
     .catch(e => {
       console.error("snapshot error", e)
       Dialog.alert({ message: "snapshot error, try after several minutes" })
     })
+}
+
+
+function snapshotState() {
+  fetch("/api/v1/miner/snapshot/state")
+    .then(r => r.json())
+    .then(r => {
+      console.log("snapshot state:", r)
+      state.file = r.data.file
+      state.time = r.data.time
+      state.state = r.data.state
+    })
+    .catch(e => {
+      console.error("get snapshot state error", e)
+      Dialog.alert({ message: "error, please retry after a while" })
+    })
+}
+
+function download() {
+  open(`/api/v1/miner/snapshot/file/${state.file}`, "_blank")
 }
 
 function handleFileChange() {
@@ -109,7 +140,7 @@ function handleFileChange() {
       if (r.data.code != 200) {
         Dialog.alert({ message: "error " + r.data.message })
       } else {
-        Dialog.alert({ message: "success" })
+        Dialog.alert({ message: "request success, check result after severial minuts" })
       }
     }
   })
@@ -126,6 +157,8 @@ function handleFileChange() {
 function uploadSnapshot() {
   document.querySelector("#file").click()
 }
+
+snapshotState()
 
 </script>
 

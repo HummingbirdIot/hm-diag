@@ -37,7 +37,7 @@ func usage() {
 func init() {
 	flag.IntVar(&opt.Port, "p", 8090, "server listening port")
 	flag.StringVar(&opt.MinerUrl, "m", "http://127.0.0.1:4467", "miner http url")
-	flag.StringVar(&opt.GitRepoDir, "gitRepo", "/home/pi/hnt_iot_release", "program docker-compose working git dir")
+	flag.StringVar(&opt.GitRepoDir, "gitRepo", "/home/pi/hnt_iot", "program docker-compose working git dir")
 	flag.UintVar(&opt.IntervalSec, "i", 30, "data refresh interval in seconds")
 	flag.Usage = usage
 }

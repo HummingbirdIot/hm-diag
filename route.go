@@ -2,8 +2,13 @@ package main
 
 import (
 	"embed"
+	"encoding/base64"
 	"io/fs"
+	"log"
 	"net/http"
+	"path"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -32,7 +37,6 @@ func RespOK(data interface{}) RespBody {
 func route(r *gin.Engine, _diagTask *diag.Task, _register *regist.Register) {
 	diagTask = _diagTask
 	register = _register
-	// r.LoadHTMLGlob("tmpl/*")
 
 	RouteStatic(r)
 	RoutePage(r)
@@ -73,6 +77,64 @@ func RouteCtrl(r *gin.Engine) {
 				Code:    200,
 				Message: "OK",
 			})
+		}
+	})
+
+	r.POST("/api/v1/miner/snapshot", func(c *gin.Context) {
+		log.Println("to snapshot")
+		err := ctrl.SnapshotTake()
+		if err != nil {
+			c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+		} else {
+			c.JSON(200, RespOK(nil))
+		}
+	})
+
+	r.GET("/api/v1/miner/snapshot/state", func(c *gin.Context) {
+		log.Println("to get snapshot state")
+		res, err := ctrl.SnapshotState()
+		if err != nil {
+			c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+		} else {
+			c.JSON(200, RespOK(res))
+		}
+	})
+
+	r.GET("/api/v1/miner/snapshot/file/:name", func(c *gin.Context) {
+		log.Println("to get snapshot file")
+		f := c.Param("name")
+		b, err := base64.StdEncoding.DecodeString(f)
+		if err != nil {
+			log.Println("get snapshot, wrong path param", f)
+			c.JSON(400, RespBody{Code: 400, Message: "wrong path param"})
+		}
+		f = string(b)
+		if !strings.HasPrefix(f, "/tmp/") {
+			log.Println("get snapshot, wrong path param", f)
+			c.JSON(400, RespBody{Code: 400, Message: "wrong path param"})
+		}
+		c.Header("Content-Disposition", "attachment; filename=\""+path.Base(f)+"\"")
+		c.File(f)
+	})
+
+	r.POST("/api/v1/miner/snapshot/apply", func(c *gin.Context) {
+		log.Println("to apply snapshot")
+		f, err := c.FormFile("file")
+		if err != nil {
+			log.Println("get form file error", err)
+			c.JSON(400, RespBody{
+				Code:    400,
+				Message: err.Error(),
+			})
+			return
+		}
+		tmpF := "/tmp/" + strconv.FormatInt(time.Now().UnixNano(), 10)
+		c.SaveUploadedFile(f, tmpF)
+		err = ctrl.SnapshotLoad(tmpF)
+		if err != nil {
+			c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+		} else {
+			c.JSON(200, RespOK(nil))
 		}
 	})
 }
