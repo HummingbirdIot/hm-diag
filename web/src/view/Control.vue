@@ -25,7 +25,7 @@
         @click="download"
       >Download</Button>
     </Cell>
-    <Cell title="Upload snapshot">
+    <Cell title="Apply snapshot">
       <input id="file" class="hidden" ref="file" type="file" @change="handleFileChange" />
       <Button size="small" type="primary" plain @click="uploadSnapshot">Upload</Button>
     </Cell>
@@ -90,7 +90,7 @@ function snapshot() {
   }).then(r => r.json())
     .then(r => {
       console.log("snapshot res:", r)
-      Dialog.alert({ message: "request success, check result after severial minuts" })
+      Dialog.alert({ message: "request success, refresh to check result after severial minuts" })
     })
     .catch(e => {
       console.error("snapshot error", e)
@@ -104,9 +104,11 @@ function snapshotState() {
     .then(r => r.json())
     .then(r => {
       console.log("snapshot state:", r)
-      state.file = r.data.file
-      state.time = r.data.time
-      state.state = r.data.state
+      if (r.data.file && r.data.state == 'done') {
+        state.file = r.data.file
+        state.time = r.data.time
+        state.state = r.data.state
+      }
     })
     .catch(e => {
       console.error("get snapshot state error", e)
