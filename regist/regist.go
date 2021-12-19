@@ -65,7 +65,7 @@ func (r *Register) Do() {
 			log.Println("[error] request regist api error, wrong http status", resp.StatusCode)
 		}
 	} else {
-		log.Println("[error] get default registry error:", err)
+		// log.Println("[error] get default registry error:", err)
 	}
 }
 

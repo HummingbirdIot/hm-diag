@@ -7,7 +7,7 @@ Wants=network-online.target
 [Service]
 Restart=always
 RestartSec=10
-ExecStart=/usr/local/bin/hm-diag
+ExecStart=/usr/local/bin/hm-diag -p 80
 
 [Install]
 WantedBy=multi-user.target
