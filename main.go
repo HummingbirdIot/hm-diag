@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"strconv"
 
 	"os"
 
@@ -62,7 +61,6 @@ func main() {
 
 		r := gin.Default()
 		route(r, task, register)
-		log.Println("server listening on port " + strconv.Itoa(opt.Port))
 		r.Run(fmt.Sprintf(":%d", opt.Port))
 	} else {
 		flag.Usage()
