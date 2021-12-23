@@ -18,6 +18,7 @@ import (
 const mainWorkDir = "/home/pi/hnt_iot/"
 
 // const mainWorkDir = "./mock/"
+
 const resyncMinerCmd = mainWorkDir + "trim_miner.sh"
 const snapshotTakeCmd = mainWorkDir + "snapshot_take.sh"
 const snapshotLoadCmd = mainWorkDir + "snapshot_load.sh"
@@ -41,7 +42,7 @@ func ResyncMiner() error {
 	return nil
 }
 
-func SnapshotTake() error {
+func SnapshotTake() {
 	fn := func() error {
 		log.Println("spawn cmd: bash", snapshotTakeCmd, "take")
 		cmd := exec.Command("bash", snapshotTakeCmd, "take")
@@ -75,7 +76,6 @@ func SnapshotTake() error {
 		return nil
 	}
 	util.Sgo(fn, "snapshot take error")
-	return nil
 }
 
 func SnapshotState() (*SnapshotStateRes, error) {
@@ -145,7 +145,7 @@ func parseSnapshotStateResult(s string) (SnapshotStateRes, error) {
 	return result, nil
 }
 
-func SnapshotLoad(file string) error {
+func SnapshotLoad(file string) {
 	fn := func() error {
 		cmd := "bash " + snapshotLoadCmd + " " + file
 		log.Println("spawn cmd:", cmd)
@@ -168,6 +168,4 @@ func SnapshotLoad(file string) error {
 		return nil
 	}
 	util.Sgo(fn, "snapshot load error")
-
-	return nil
 }
