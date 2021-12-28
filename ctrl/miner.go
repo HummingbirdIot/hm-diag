@@ -162,7 +162,7 @@ func SnapshotLoad(file string) {
 		}
 		err = child.Wait()
 		if err != nil {
-			errors.WithMessage(err, "load snapthot exit error")
+			err = errors.WithMessage(err, "load snapthot exit error")
 			return err
 		}
 		return nil
