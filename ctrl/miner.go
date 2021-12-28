@@ -18,6 +18,7 @@ import (
 const mainWorkDir = "/home/pi/hnt_iot/"
 
 // const mainWorkDir = "./mock/"
+
 const resyncMinerCmd = mainWorkDir + "trim_miner.sh"
 const snapshotTakeCmd = mainWorkDir + "snapshot_take.sh"
 const snapshotLoadCmd = mainWorkDir + "snapshot_load.sh"
@@ -41,19 +42,19 @@ func ResyncMiner() error {
 	return nil
 }
 
-func SnapshotTake() error {
+func SnapshotTake() {
 	fn := func() error {
 		log.Println("spawn cmd: bash", snapshotTakeCmd, "take")
 		cmd := exec.Command("bash", snapshotTakeCmd, "take")
 		p, err := cmd.StdoutPipe()
 		if err != nil {
-			return errors.WithMessage(err, "start snapshot cmd pipe error")
+			return errors.WithStack(errors.WithMessage(err, "start snapshot cmd pipe error"))
 		}
 		r := bufio.NewReader(p)
 
 		err = cmd.Start()
 		if err != nil {
-			return errors.WithMessage(err, "start snapshot cmd error")
+			return errors.WithStack(errors.WithMessage(err, "start snapshot cmd error"))
 		}
 		for err == nil {
 			ln, _, errIn := r.ReadLine()
@@ -70,28 +71,27 @@ func SnapshotTake() error {
 
 		err = cmd.Wait()
 		if err != nil {
-			return errors.WithMessage(err, "snapshot exit error")
+			return errors.WithStack(errors.WithMessage(err, "snapshot exit error"))
 		}
 		return nil
 	}
 	util.Sgo(fn, "snapshot take error")
-	return nil
 }
 
 func SnapshotState() (*SnapshotStateRes, error) {
-	result := SnapshotStateRes{}
+	var result SnapshotStateRes
 	resPrefix := ">>>state:"
 	log.Println("spawn cmd: bash", snapshotTakeCmd)
 	cmd := exec.Command("bash", snapshotTakeCmd, "state")
 	p, err := cmd.StdoutPipe()
 	if err != nil {
-		return nil, errors.WithMessage(err, "start snapshot state cmd pipe error")
+		return nil, errors.WithStack(errors.WithMessage(err, "start snapshot state cmd pipe error"))
 	}
 	r := bufio.NewReader(p)
 
 	err = cmd.Start()
 	if err != nil {
-		return nil, errors.WithMessage(err, "start snapshot state cmd error")
+		return nil, errors.WithStack(errors.WithMessage(err, "start snapshot state cmd error"))
 	}
 	for err == nil {
 		ln, _, errIn := r.ReadLine()
@@ -101,23 +101,9 @@ func SnapshotState() (*SnapshotStateRes, error) {
 			log.Println("snapshot state cmd output:", s)
 			if strings.HasPrefix(s, resPrefix) {
 				s = strings.TrimPrefix(s, resPrefix)
-				arr := strings.Split(s, ",")
-				for _, a := range arr {
-					subArr := strings.Split(a, "=")
-					field := subArr[0]
-					if field == "time" {
-						u, err := strconv.ParseInt(subArr[1], 10, 64)
-						if err != nil {
-							return nil, errors.WithMessage(err, "snapshot state result format eroror:"+subArr[1])
-						}
-						result.Time = time.Unix(u, 0)
-					}
-					if field == "file" {
-						result.File = base64.StdEncoding.EncodeToString([]byte(subArr[1]))
-					}
-					if field == "state" {
-						result.State = subArr[1]
-					}
+				result, err = parseSnapshotStateResult(s)
+				if err != nil {
+					return nil, err
 				}
 			}
 		} else if err == io.EOF {
@@ -129,12 +115,37 @@ func SnapshotState() (*SnapshotStateRes, error) {
 
 	err = cmd.Wait()
 	if err != nil {
-		return nil, errors.WithMessage(err, "snapshot exit error")
+		return nil, errors.WithStack(errors.WithMessage(err, "snapshot exit error"))
 	}
 	return &result, nil
 }
 
-func SnapshotLoad(file string) error {
+func parseSnapshotStateResult(s string) (SnapshotStateRes, error) {
+	result := SnapshotStateRes{}
+	arr := strings.Split(s, ",")
+	for _, a := range arr {
+		subArr := strings.Split(a, "=")
+		field := subArr[0]
+		value := subArr[1]
+		if field == "time" && value != "" {
+			u, err := strconv.ParseInt(value, 10, 64)
+			if err != nil {
+				return result, errors.WithStack(
+					errors.WithMessage(err, "snapshot state result format eroror:"+value))
+			}
+			result.Time = time.Unix(u, 0)
+		}
+		if field == "file" && value != "" {
+			result.File = base64.StdEncoding.EncodeToString([]byte(value))
+		}
+		if field == "state" {
+			result.State = value
+		}
+	}
+	return result, nil
+}
+
+func SnapshotLoad(file string) {
 	fn := func() error {
 		cmd := "bash " + snapshotLoadCmd + " " + file
 		log.Println("spawn cmd:", cmd)
@@ -151,12 +162,10 @@ func SnapshotLoad(file string) error {
 		}
 		err = child.Wait()
 		if err != nil {
-			errors.WithMessage(err, "load snapthot exit error")
+			err = errors.WithMessage(err, "load snapthot exit error")
 			return err
 		}
 		return nil
 	}
 	util.Sgo(fn, "snapshot load error")
-
-	return nil
 }

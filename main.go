@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"strconv"
 
 	"os"
 
@@ -20,6 +19,7 @@ type Opt struct {
 	MinerUrl    string
 	IntervalSec uint
 	GitRepoDir  string
+	Verbose     bool
 }
 
 var opt Opt
@@ -39,6 +39,7 @@ func init() {
 	flag.StringVar(&opt.MinerUrl, "m", "http://127.0.0.1:4467", "miner http url")
 	flag.StringVar(&opt.GitRepoDir, "gitRepo", "/home/pi/hnt_iot", "program docker-compose working git dir")
 	flag.UintVar(&opt.IntervalSec, "i", 30, "data refresh interval in seconds")
+	flag.BoolVar(&opt.Verbose, "v", false, "verbose log")
 	flag.Usage = usage
 }
 
@@ -48,7 +49,9 @@ func main() {
 	flag.Parse()
 	task = &diag.Task{Config: diag.TaskConfig{MinerUrl: opt.MinerUrl, IntervalSec: opt.IntervalSec}}
 	if flag.Arg(0) == "get" {
-		log.SetOutput(io.Discard)
+		if !opt.Verbose {
+			log.SetOutput(io.Discard)
+		}
 		task.Do()
 		s, _ := json.MarshalIndent(task.Data(), "", "  ")
 		os.Stdout.WriteString(string(s))
@@ -62,7 +65,6 @@ func main() {
 
 		r := gin.Default()
 		route(r, task, register)
-		log.Println("server listening on port " + strconv.Itoa(opt.Port))
 		r.Run(fmt.Sprintf(":%d", opt.Port))
 	} else {
 		flag.Usage()

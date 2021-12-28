@@ -82,19 +82,16 @@ func RouteCtrl(r *gin.Engine) {
 
 	r.POST("/api/v1/miner/snapshot", func(c *gin.Context) {
 		log.Println("to snapshot")
-		err := ctrl.SnapshotTake()
-		if err != nil {
-			c.JSON(500, RespBody{Code: 500, Message: err.Error()})
-		} else {
-			c.JSON(200, RespOK(nil))
-		}
+		ctrl.SnapshotTake()
+		c.JSON(200, RespOK(nil))
 	})
 
 	r.GET("/api/v1/miner/snapshot/state", func(c *gin.Context) {
 		log.Println("to get snapshot state")
 		res, err := ctrl.SnapshotState()
 		if err != nil {
-			c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+			log.Printf("get snapshot state error: %+v\n", err)
+			c.JSON(501, RespBody{Code: 500, Message: err.Error()})
 		} else {
 			c.JSON(200, RespOK(res))
 		}
@@ -130,12 +127,13 @@ func RouteCtrl(r *gin.Engine) {
 		}
 		tmpF := "/tmp/" + strconv.FormatInt(time.Now().UnixNano(), 10)
 		c.SaveUploadedFile(f, tmpF)
-		err = ctrl.SnapshotLoad(tmpF)
-		if err != nil {
-			c.JSON(500, RespBody{Code: 500, Message: err.Error()})
-		} else {
-			c.JSON(200, RespOK(nil))
-		}
+		ctrl.SnapshotLoad(tmpF)
+		c.JSON(200, RespOK(nil))
+	})
+
+	r.POST("/api/v1/docker/reset", func(c *gin.Context) {
+		ctrl.DockerReset()
+		c.JSON(200, RespOK(nil))
 	})
 }
 
