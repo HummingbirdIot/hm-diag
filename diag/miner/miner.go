@@ -2,6 +2,7 @@ package miner
 
 import (
 	"os/exec"
+	"strings"
 
 	"xdt.com/hm-diag/diag/jsonrpc"
 	"xdt.com/hm-diag/util"
@@ -33,7 +34,18 @@ func FetchData(url string) map[string]interface{} {
 	//resMap["infoSummary"] = util.ToLowerCamelObj(res)
 
 	fwVer, _ := FirmwareVersion()
-	resMap["infoSummary"] = map[string]string{"firmwareVersion": fwVer}
+	ver, _ := Version()
+	res, _ = client.Call("info_name", nil)
+	name := ""
+	if r, ok := res.(map[string]interface{}); ok {
+		name = r["name"].(string)
+	}
+	resMap["infoSummary"] = map[string]interface{}{
+		"firmwareVersion": fwVer,
+		"version":         ver,
+		"name":            name,
+		"height":          resMap["infoHeight"],
+	}
 
 	// res, _ = client.Call("print_keys", nil)
 	// resMap["print_keys"] = res
@@ -48,4 +60,14 @@ func FirmwareVersion() (string, error) {
 		return "", err
 	}
 	return string(out), nil
+}
+
+func Version() (string, error) {
+	s := "cat /etc/lsb_release | grep DISTRIB_RELEASE | awk -F = '{print $2}'"
+	cmd := exec.Command("sh", "-c", s)
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.ReplaceAll(string(out), "\n", ""), nil
 }
