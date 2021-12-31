@@ -10,6 +10,9 @@
     <Cell title="Resync miner">
       <Button size="small" type="primary" plain @click="resync">Resync</Button>
     </Cell>
+    <Cell title="Restart miner">
+      <Button size="small" type="primary" plain @click="restartMiner">Restart</Button>
+    </Cell>
   </CellGroup>
 
   <CellGroup>
@@ -62,12 +65,35 @@ function reboot() {
 
 function resync() {
   Toast.loading({
-    message: '加载中...',
+    message: 'processing ...',
     forbidClick: true,
     loadingType: 'spinner',
     duration: 0
   });
   fetch('/api/v1/miner/resync', { method: 'POST' })
+    .then(r => r.json())
+    .then(r => {
+      Toast.clear()
+      if (r && r.code == 200) {
+        Toast.success("success")
+      } else {
+        Dialog.alert({ message: "error:" + r.message })
+      }
+    })
+    .catch(r => {
+      Dialog.alert({ message: "error:" + r })
+    })
+}
+
+
+function restartMiner() {
+  Toast.loading({
+    message: 'processing ...',
+    forbidClick: true,
+    loadingType: 'spinner',
+    duration: 0
+  });
+  fetch('/api/v1/miner/restart', { method: 'POST' })
     .then(r => r.json())
     .then(r => {
       Toast.clear()
