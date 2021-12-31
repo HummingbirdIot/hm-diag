@@ -3,7 +3,7 @@
     <div class="big-title">Control</div>
   </Cell>
 
-  <CellGroup>
+  <CellGroup title="Device">
     <Cell title="Reboot device">
       <Button size="small" type="danger" plain @click="reboot">reboot</Button>
     </Cell>
@@ -15,7 +15,7 @@
     </Cell>
   </CellGroup>
 
-  <CellGroup>
+  <CellGroup title="Snapshot">
     <Cell title="Generate snapshot">
       <Button size="small" type="primary" plain @click="snapshot">Snapshot</Button>
     </Cell>
@@ -34,6 +34,11 @@
     </Cell>
     <Cell>
       <Progress v-if="showProgress" :percentage="progress" :show-pivot="false"></Progress>
+    </Cell>
+  </CellGroup>
+  <CellGroup title="Advanced">
+    <Cell title="Workspace reset">
+      <Button size="small" type="danger" plain @click="resetWorkspace">Rest</Button>
     </Cell>
   </CellGroup>
 </template>
@@ -130,10 +135,12 @@ function snapshotState() {
     .then(r => r.json())
     .then(r => {
       console.log("snapshot state:", r)
-      if (r.data.file && r.data.state == 'done') {
+      if (r.status == 200 && r.data?.file && r.data?.state == 'done') {
         state.file = r.data.file
         state.time = r.data.time
         state.state = r.data.state
+      } else {
+        Dialog.alert({ message: "load snapshot state error, please retry after a while" })
       }
     })
     .catch(e => {
@@ -184,6 +191,42 @@ function handleFileChange() {
 }
 function uploadSnapshot() {
   document.querySelector("#file").click()
+}
+
+function resetWorkspace() {
+  Dialog.confirm({
+    title: "Warning：Please operate carefully",
+    message: "The device program and related configuration will be reset"
+  }).then(() => {
+    doResetWorkspace()
+  }).catch(() => {
+    // ignore
+  })
+}
+
+function doResetWorkspace() {
+  fetch("/api/v1/workspace/reset", {
+    method: "POST"
+  }).then(r => r.json())
+    .then(r => {
+      if (r.status != 200) {
+        console.log(r.status, r.data)
+        Dialog.alert({ message: "error, http status " + r.status + "\n" + r.data?.message })
+      } else {
+        if (r.data.code != 200) {
+          Dialog.alert({ message: "error " + r.data.message })
+        } else {
+          Dialog.alert({ message: "request success, check result after severial minuts" })
+        }
+      }
+
+      console.log("workspace reset res:", r)
+      Dialog.alert({ message: "success" })
+    })
+    .catch(e => {
+      console.error("workspace reset error", e)
+      Dialog.alert({ message: "snapshot error, try after several minutes" })
+    })
 }
 
 snapshotState()

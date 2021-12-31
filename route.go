@@ -105,7 +105,7 @@ func RouteCtrl(r *gin.Engine) {
 		res, err := ctrl.SnapshotState()
 		if err != nil {
 			log.Printf("get snapshot state error: %+v\n", err)
-			c.JSON(501, RespBody{Code: 500, Message: err.Error()})
+			c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 		} else {
 			c.JSON(200, RespOK(res))
 		}
