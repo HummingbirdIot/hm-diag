@@ -14,7 +14,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"xdt.com/hm-diag/ctrl"
 	"xdt.com/hm-diag/diag"
-	"xdt.com/hm-diag/proxy"
 	"xdt.com/hm-diag/regist"
 )
 
@@ -150,6 +149,16 @@ func RouteCtrl(r *gin.Engine) {
 		ctrl.DockerReset()
 		c.JSON(200, RespOK(nil))
 	})
+
+	r.POST("/api/v1/workspace/reset", func(c *gin.Context) {
+		err := ctrl.GitRepoReset()
+		if err != nil {
+			log.Println(err)
+			c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+		} else {
+			c.JSON(200, RespOK(nil))
+		}
+	})
 }
 
 func RouteState(r *gin.Engine) {
@@ -167,11 +176,11 @@ func RouteConfigProxy(r *gin.Engine) {
 func proxyGetHandler(c *gin.Context) {
 	item := c.Query("item")
 	var err error
-	var p *proxy.ProxyItem
+	var p *ctrl.ProxyItem
 	if item == "gitRepo" {
-		p, err = proxy.RepoProxy(opt.GitRepoDir)
+		p, err = ctrl.RepoProxy(opt.GitRepoDir)
 	} else if item == "gitRelease" {
-		p, err = proxy.ReleaseFileProxy(opt.GitRepoDir)
+		p, err = ctrl.ReleaseFileProxy(opt.GitRepoDir)
 	}
 	if err != nil {
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
@@ -186,18 +195,19 @@ func proxySetHandler(c *gin.Context) {
 		c.JSON(400, RespBody{Code: 400, Message: "query param 'item' should be 'gitRepo' or 'gitRelease'"})
 		return
 	}
-	var proxyItem proxy.ProxyItem
+	var proxyItem ctrl.ProxyItem
 	err := c.BindJSON(&proxyItem)
 	if err != nil {
 		c.JSON(400, RespBody{Code: 400, Message: "wrong request body:" + err.Error()})
 		return
 	}
 	if item == "gitRepo" {
-		err = proxy.SetRepoMirrorProxy(opt.GitRepoDir, proxyItem)
+		err = ctrl.SetRepoMirrorProxy(opt.GitRepoDir, proxyItem)
 	} else if item == "gitRelease" {
-		err = proxy.SetReleaseFileProxy(opt.GitRepoDir, proxyItem)
+		err = ctrl.SetReleaseFileProxy(opt.GitRepoDir, proxyItem)
 	}
 	if err != nil {
+		log.Println(err)
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 	} else {
 		c.JSON(200, RespOK(nil))
