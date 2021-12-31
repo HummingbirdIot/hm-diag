@@ -80,6 +80,21 @@ func RouteCtrl(r *gin.Engine) {
 		}
 	})
 
+	r.POST("/api/v1/miner/restart", func(c *gin.Context) {
+		err := ctrl.RestartMiner()
+		if err != nil {
+			c.JSON(500, RespBody{
+				Code:    500,
+				Message: "receive restart miner request, but got error:" + err.Error(),
+			})
+		} else {
+			c.JSON(200, RespBody{
+				Code:    200,
+				Message: "OK",
+			})
+		}
+	})
+
 	r.POST("/api/v1/miner/snapshot", func(c *gin.Context) {
 		log.Println("to snapshot")
 		ctrl.SnapshotTake()
