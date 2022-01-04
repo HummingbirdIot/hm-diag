@@ -135,10 +135,12 @@ function snapshotState() {
     .then(r => r.json())
     .then(r => {
       console.log("snapshot state:", r)
-      if (r.status == 200 && r.data?.file && r.data?.state == 'done') {
-        state.file = r.data.file
-        state.time = r.data.time
-        state.state = r.data.state
+      if (r.code == 200) {
+        if (r.data?.file && r.data?.state == 'done') {
+          state.file = r.data.file
+          state.time = r.data.time
+          state.state = r.data.state
+        }
       } else {
         Dialog.alert({ message: "load snapshot state error, please retry after a while" })
       }
