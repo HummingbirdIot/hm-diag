@@ -5,7 +5,7 @@
 
   <CellGroup title="Device">
     <Cell title="Reboot device">
-      <Button size="small" type="danger" plain @click="reboot">reboot</Button>
+      <Button size="small" type="danger" plain @click="reboot">Reboot</Button>
     </Cell>
     <Cell title="Resync miner">
       <Button size="small" type="primary" plain @click="resync">Resync</Button>

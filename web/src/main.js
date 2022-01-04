@@ -20,6 +20,7 @@ import MinerStateInfo from "./view/MinerStateInfo.vue";
 import Setting from "./view/Setting.vue";
 import Control from "./view/Control.vue";
 import "./style/common.less";
+import "./style/index.less";
 
 const routes = [
   { path: "/", component: Home },
