@@ -23,6 +23,8 @@ const resyncMinerCmd = mainWorkDir + "trim_miner.sh"
 const snapshotTakeCmd = mainWorkDir + "snapshot_take.sh"
 const snapshotLoadCmd = mainWorkDir + "snapshot_load.sh"
 
+var restartMinerCmd = []string{mainWorkDir + "hummingbird_iot.sh", "restartMiner"}
+
 type SnapshotStateRes struct {
 	File  string    `json:"file"`
 	State string    `json:"state"`
@@ -39,6 +41,19 @@ func ResyncMiner() error {
 		return err
 	}
 	log.Println("resync miner output:", string(data))
+	return nil
+}
+
+func RestartMiner() error {
+	log.Println("to restart miner")
+	log.Println("exec cmd:", restartMinerCmd)
+	cmd := exec.Command("bash", restartMinerCmd...)
+	data, err := cmd.Output()
+	if err != nil {
+		log.Println("[error] restart miner error:", err.Error(), string(data))
+		return err
+	}
+	log.Println("restart miner output:", string(data))
 	return nil
 }
 

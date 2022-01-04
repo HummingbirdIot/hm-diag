@@ -1,8 +1,9 @@
-package proxy
+package ctrl
 
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/url"
 	"os"
@@ -11,9 +12,12 @@ import (
 	"reflect"
 	"regexp"
 	"strings"
+
+	"github.com/pkg/errors"
+	"xdt.com/hm-diag/config"
 )
 
-const proxyConfFile = ".proxyconf"
+const PROXY_FILE_NAME = ".proxyconf"
 
 type ProxyType string
 
@@ -30,6 +34,13 @@ type ProxyConf struct {
 	ReleaseFileProxy ProxyItem `json:"releaseFileProxy"`
 }
 
+func init() {
+	err := os.MkdirAll(config.PROXY_ETC_DIR, os.ModeDir)
+	if err != nil {
+		log.Fatalln(errors.WithMessage(err, "create hm-diag etc dir error"))
+	}
+}
+
 func SetRepoMirrorProxy(repoDir string, proxy ProxyItem) error {
 	// check params
 	if proxy.Type != MIRROR {
@@ -43,8 +54,27 @@ func SetRepoMirrorProxy(repoDir string, proxy ProxyItem) error {
 		return err
 	}
 
+	err = setWorkspaceGitMirrorProxy(repoDir, proxy)
+	if err != nil {
+		return err
+	}
+
+	// save to etc file
+	buf, err := json.Marshal(proxy)
+	if err != nil {
+		return errors.WithMessage(err, "convert proxy to json error")
+	}
+	err = os.WriteFile(config.PROXY_ETC_REPO, buf, 0664)
+	if err != nil {
+		return errors.WithMessage(err, "save release file proxy to config file error")
+	}
+
+	return nil
+}
+
+func setWorkspaceGitMirrorProxy(repoDir string, proxy ProxyItem) error {
 	// change dir to repo dir
-	err = os.Chdir(repoDir)
+	err := os.Chdir(repoDir)
 	if err != nil {
 		return err
 	}
@@ -83,7 +113,6 @@ func SetRepoMirrorProxy(repoDir string, proxy ProxyItem) error {
 	}
 	str = string(buf)
 	log.Println("git config set url insteadof output:\n", str)
-
 	return nil
 }
 
@@ -105,12 +134,19 @@ func SetReleaseFileProxy(repoDir string, proxy ProxyItem) error {
 	if err != nil {
 		return err
 	}
-	confFilePath := path.Join(wd, proxyConfFile)
+	confFilePath := path.Join(wd, PROXY_FILE_NAME)
 	err = os.WriteFile(confFilePath, proxyConfBuf, 0664)
 	if err != nil {
 		return err
 	}
 	log.Println("writen config into file:", confFilePath)
+
+	// save to etc file
+	err = os.WriteFile(config.PROXY_ETC_RELEASE, proxyConfBuf, 0664)
+	if err != nil {
+		log.Println("save release file proxy to config file error")
+	}
+
 	return nil
 }
 
@@ -135,6 +171,9 @@ func RepoMirrorUrl(repoDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if s == "" {
+		return "", nil
+	}
 	re := regexp.MustCompile(`url\.(.*)\.insteadof.*`)
 	f := re.FindStringSubmatch(s)
 	return f[1], nil
@@ -150,16 +189,15 @@ func ReleaseFileProxy(repoDir string) (*ProxyItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	confFilePath := path.Join(wd, proxyConfFile)
+	confFilePath := path.Join(wd, PROXY_FILE_NAME)
 	if _, err := os.Stat(confFilePath); err == nil {
-		log.Println("read file.........")
 		buf, err := os.ReadFile(confFilePath)
 		if err != nil {
 			return nil, err
 		}
 		var item ProxyConf
 		err = json.Unmarshal(buf, &item)
-		log.Println("read file.........", string(buf))
+		log.Println("read proxy config", string(buf))
 		if err != nil {
 			return nil, err
 		}
@@ -202,4 +240,43 @@ func gitRepoMirrorConf(repoDir string) (string, error) {
 		}
 	}
 	return str, nil
+}
+
+func copyGitRepoProxy() error {
+	if _, err := os.Stat(config.PROXY_ETC_REPO); err != nil {
+		log.Println("no git repo proxy config to copy")
+		return nil
+	}
+	buf, err := os.ReadFile(config.PROXY_ETC_REPO)
+	if err != nil {
+		return errors.WithMessage(err, "read git mirror config file error")
+	}
+	var proxyItem ProxyItem
+	err = json.Unmarshal(buf, &proxyItem)
+	if err != nil {
+		os.Remove(config.PROXY_ETC_REPO)
+		return errors.WithMessage(err, "git mirror config file format error")
+	}
+	err = setWorkspaceGitMirrorProxy(config.Config().GitRepoDir, proxyItem)
+	if err != nil {
+		return errors.WithMessage(err, "set workspace git mirror proxy error:")
+	}
+
+	return nil
+}
+
+func copyGitReleaseProxy() error {
+	if _, err := os.Stat(config.PROXY_ETC_RELEASE); err != nil {
+		log.Println("no git release proxy config to copy")
+		return nil
+	}
+	buf, err := ioutil.ReadFile(config.PROXY_ETC_RELEASE)
+	if err != nil {
+		return errors.WithMessage(err, "read git mirror config file error")
+	}
+	err = ioutil.WriteFile(PROXY_FILE_NAME, buf, 0664)
+	if err != nil {
+		return errors.WithMessage(err, "wirte workspace git release config file error")
+	}
+	return nil
 }

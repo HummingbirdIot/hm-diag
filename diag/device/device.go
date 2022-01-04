@@ -17,10 +17,10 @@ import (
 	unet "github.com/shirou/gopsutil/v3/net"
 )
 
-func GetWifiInfo() map[string]interface{} {
+func GetWifiInfo() (map[string]interface{}, error) {
 	conn, err := dbus.ConnectSystemBus()
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer conn.Close()
 
@@ -28,7 +28,7 @@ func GetWifiInfo() map[string]interface{} {
 
 	call := obj.Call("net.connman.Technology.GetProperties", 0)
 	if call.Err != nil {
-		panic(call.Err)
+		return nil, call.Err
 	}
 
 	r := call.Body[0].(map[string]dbus.Variant)
@@ -39,7 +39,7 @@ func GetWifiInfo() map[string]interface{} {
 		resMap[ka] = a
 	}
 
-	return resMap
+	return resMap, nil
 }
 
 func GetCpuFreq() (interface{}, error) {

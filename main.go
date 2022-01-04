@@ -10,12 +10,14 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag"
 	"xdt.com/hm-diag/regist"
 )
 
 type Opt struct {
 	Port        int
+	GitRepoUrl  string
 	MinerUrl    string
 	IntervalSec uint
 	GitRepoDir  string
@@ -37,16 +39,26 @@ func usage() {
 func init() {
 	flag.IntVar(&opt.Port, "p", 8090, "server listening port")
 	flag.StringVar(&opt.MinerUrl, "m", "http://127.0.0.1:4467", "miner http url")
-	flag.StringVar(&opt.GitRepoDir, "gitRepo", "/home/pi/hnt_iot", "program docker-compose working git dir")
+	flag.StringVar(&opt.GitRepoDir, "gitRepo",
+		"/home/pi/hnt_iot", "program docker-compose working git dir")
+	flag.StringVar(&opt.GitRepoUrl, "gitRepoUrl",
+		"https://github.com/HummingbirdIot/hnt_iot_release.git", "hnt iot git url")
 	flag.UintVar(&opt.IntervalSec, "i", 30, "data refresh interval in seconds")
 	flag.BoolVar(&opt.Verbose, "v", false, "verbose log")
 	flag.Usage = usage
+
+	flag.Parse()
+	config.InitConf(config.GlobalConfig{
+		MinerUrl:    opt.MinerUrl,
+		GitRepoDir:  opt.GitRepoDir,
+		GitRepoUrl:  opt.GitRepoUrl,
+		IntervalSec: opt.IntervalSec,
+	})
 }
 
 var task *diag.Task
 
 func main() {
-	flag.Parse()
 	task = &diag.Task{Config: diag.TaskConfig{MinerUrl: opt.MinerUrl, IntervalSec: opt.IntervalSec}}
 	if flag.Arg(0) == "get" {
 		if !opt.Verbose {

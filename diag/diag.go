@@ -100,7 +100,10 @@ func (t *Task) FetchMinerInfo() map[string]interface{} {
 func (t *Task) FetchDeviceInfo() map[string]interface{} {
 	resMap := device.GetInfo()
 
-	wifi := device.GetWifiInfo()
+	wifi, err := device.GetWifiInfo()
+	if err != nil {
+		log.Println("fetch wifi info error", err)
+	}
 	resMap["wifi"] = wifi
 
 	cpuTemp, _ := device.GetCpuTemp()
