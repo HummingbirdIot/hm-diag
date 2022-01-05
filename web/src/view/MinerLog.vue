@@ -27,7 +27,7 @@
       <Field v-model="filterTxt" placeholder="input filter text or select filter on the left" />
     </Cell>
     <Cell title>
-      <Button type="primary" size="small" plain @click="fullScreen">Full Screen Log</Button> &nbsp;
+      <Button type="primary" size="small" plain @click="fullScreen">Full Screen Log</Button>&nbsp;
       <Button type="primary" size="small" @click="query">Query</Button>
     </Cell>
   </CellGroup>
@@ -35,7 +35,12 @@
   <!-- <textarea v-model="log" style="width:100%"></textarea> -->
   <!-- <Divider /> -->
   <!-- <Field v-model="log" type="textarea" autosize disabled class="log"></Field> -->
-  <pre id="log-con" class="log">{{ log }}</pre>
+  <pre id="log-con" class="log">
+    <div v-for="l in logs" class="log-msg">
+      <span class="log-date">{{l.time}}</span>
+      {{l.message}}
+    </div>
+  </pre>
 </template>
 
 <script setup>
@@ -59,6 +64,7 @@ const minutesAgo = ref(10)
 const filterTxt = ref('')
 
 const log = ref('')
+const logs = reactive([])
 
 function selTime(event, value) {
   console.log(event)
@@ -89,7 +95,19 @@ function query() {
     .then(r => r.json())
     .then(r => {
       if (r.code == 200) {
-        log.value = r.data + '\n\n'
+        const arr = r.data.split('\n')
+        logs.splice(0, logs.length)
+        for (const l of arr) {
+          try {
+            if (l !== '') {
+              const lj = JSON.parse(l)
+              lj.time = new Date(lj.time/1000).Format("MM-dd HH:mm:ss")
+              logs.push(lj)
+            }
+          } catch (e) {
+            console.error('parse log error: ', e)
+          }
+        }
       } else {
         Dialog.alert({ message: "query log error:" + r.message })
       }
@@ -116,12 +134,21 @@ function fullScreen() {
   color: #fff !important;
 }
 .log {
-  padding: 10px;
-  background-color: #333;
+  padding: 0px 10px;
+  background-color: #454545;
+  height: calc(100vh - 280px);
   color: #fafafa;
-  min-height: 50vh;
   line-height: 20px;
-  font-size: 13px;
+  font-size: 14px;
   overflow-y: scroll;
+  .log-msg {
+    white-space: nowrap;
+    line-height: initial;
+    color: #27aa5e;
+  }
+  .log-date {
+    color: #8b959c;
+    // user-select: none;
+  }
 }
 </style>
