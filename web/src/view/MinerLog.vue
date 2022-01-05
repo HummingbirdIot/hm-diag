@@ -27,13 +27,15 @@
       <Field v-model="filterTxt" placeholder="input filter text or select filter on the left" />
     </Cell>
     <Cell title>
-      <Button type="primary" size="small" plain @click="query">Query</Button>
+      <Button type="primary" size="small" plain @click="fullScreen">Full Screen Log</Button> &nbsp;
+      <Button type="primary" size="small" @click="query">Query</Button>
     </Cell>
   </CellGroup>
 
   <!-- <textarea v-model="log" style="width:100%"></textarea> -->
   <!-- <Divider /> -->
-  <Field v-model="log" type="textarea" autosize disabled class="log"></Field>
+  <!-- <Field v-model="log" type="textarea" autosize disabled class="log"></Field> -->
+  <pre id="log-con" class="log">{{ log }}</pre>
 </template>
 
 <script setup>
@@ -98,6 +100,10 @@ function query() {
     })
 }
 
+function fullScreen() {
+  document.querySelector('#log-con').requestFullscreen()
+}
+
 </script>
 
 <style lang="less" scoped>
@@ -110,9 +116,12 @@ function query() {
   color: #fff !important;
 }
 .log {
+  padding: 10px;
   background-color: #333;
-  textarea {
-    color: #fff !important;
-  }
+  color: #fafafa;
+  min-height: 50vh;
+  line-height: 20px;
+  font-size: 13px;
+  overflow-y: scroll;
 }
 </style>
