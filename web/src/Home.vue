@@ -44,6 +44,9 @@
       <Cell
         title="WLAN0 MAC"
       >{{ data?.device?.netInterface?.find(i => i.name == 'wlan0')?.hardwareAddr }}</Cell>
+
+      <Cell title="Miner Log" is-link to="/minerLog">
+      </Cell>
     </CellGroup>
     <br/>
     <br/>
@@ -80,7 +83,7 @@ function openHeliumExplorer() {
 
 function fetchData() {
   Toast.loading({
-    message: '加载中...',
+    message: 'loading...',
     forbidClick: true,
     loadingType: 'spinner',
     duration: 10 * 1000

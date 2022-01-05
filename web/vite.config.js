@@ -23,12 +23,11 @@ export default {
     host: '0.0.0.0',
     proxy: {
       '/api/': {
-        target: 'http://http://192.168.89.45',
+        target: 'http://192.168.89.45:9090',
         changeOrigin: true
       },
-
       '/state': {
-        target: 'http://192.168.89.45',
+        target: 'http://192.168.89.45:9090',
         changeOrigin: true
       }
     }

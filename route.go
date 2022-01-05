@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"xdt.com/hm-diag/ctrl"
 	"xdt.com/hm-diag/diag"
+	"xdt.com/hm-diag/diag/miner"
 	"xdt.com/hm-diag/regist"
 )
 
@@ -166,6 +167,7 @@ func RouteState(r *gin.Engine) {
 	r.GET("/api/v1/device/state", deviceInfoHandler)
 	r.GET("/api/v1/miner/state", minerInfoHandler)
 	r.GET("/registInfo", registInfoHandler)
+	r.GET("/api/v1beta/miner/log", minerLogHandler)
 }
 
 func RouteConfigProxy(r *gin.Engine) {
@@ -249,5 +251,29 @@ func registInfoHandler(c *gin.Context) {
 		c.JSON(500, RespBody{Code: 500, Message: "error: " + err.Error()})
 	} else {
 		c.JSON(200, RespOK(d))
+	}
+}
+
+func minerLogHandler(c *gin.Context) {
+	var since time.Time = time.Now().Add(time.Minute * time.Duration(5))
+	var until time.Time = time.Now()
+	if st, err := time.Parse("2006-01-02T15:04:05", c.Query("since")); err == nil {
+		since = st
+	} else {
+		log.Println("query miner log, convert since time error: ", err)
+	}
+	if tt, err := time.Parse("2006-01-02T15:04:05", c.Query("until")); err == nil {
+		until = tt
+	} else {
+		log.Println("query miner log, convert until time error: ", err)
+	}
+	filter := c.Query("filter")
+	log.Printf("query miner log, since: %s, until: %s, filter: %s", since, until, filter)
+	l, err := miner.MinerLog(since, until, filter)
+	if err == nil {
+		c.JSON(200, RespOK(l))
+	} else {
+		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+		log.Println("query miner log error: ", err)
 	}
 }

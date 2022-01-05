@@ -19,11 +19,14 @@ import DeviceStateInfo from "./view/DeviceStateInfo.vue";
 import MinerStateInfo from "./view/MinerStateInfo.vue";
 import Setting from "./view/Setting.vue";
 import Control from "./view/Control.vue";
+import MinerLog from "./view/MinerLog.vue";
 import "./style/common.less";
 import "./style/index.less";
+import { initDateFormat } from "./util/time";
 
 const routes = [
   { path: "/", component: Home },
+  { path: "/minerLog", component: MinerLog },
   { path: "/setting", component: Setting },
   { path: "/control", component: Control },
   { path: "/device/state", component: DeviceStateInfo },
@@ -37,3 +40,5 @@ const router = createRouter({
 const app = createApp(App);
 
 app.use(router).mount("#app");
+
+initDateFormat();

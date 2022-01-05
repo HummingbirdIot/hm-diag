@@ -51,7 +51,7 @@ import * as axios from "axios"
 const file = ref(null)
 const showProgress = ref(false)
 const progress = ref(0)
-const state = reactive({ state: "unknown", file: "", time: "" })
+const state = reactive({ state: "unknown", file: "", time: "no generated snapshot" })
 
 function reboot() {
   fetch('/api/v1/device/reboot', { method: 'POST' })

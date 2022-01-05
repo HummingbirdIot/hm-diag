@@ -5,17 +5,18 @@ import (
 	"log"
 	"os/exec"
 
+	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/util"
 )
 
-// todo: 优化 mainWorkDir 参数配置方式
-const dockerResetScript = mainWorkDir + "docker_reset.sh"
+var dockerResetScript = "./docker_reset.sh"
 
 func DockerReset() {
 	fn := func() error {
 		log.Println("to reset docker")
 		log.Println("exec cmd: bash", dockerResetScript)
 		cmd := exec.Command("bash", dockerResetScript)
+		cmd.Dir = config.Config().GitRepoDir
 		p, err := cmd.StdoutPipe()
 		if err != nil {
 			return err
