@@ -136,7 +136,7 @@ function fullScreen() {
 .log {
   padding: 0px 10px;
   background-color: #454545;
-  height: calc(100vh - 280px);
+  height: calc(100vh - 230px);
   color: #fafafa;
   line-height: 20px;
   font-size: 14px;
