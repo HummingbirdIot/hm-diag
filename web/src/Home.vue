@@ -2,7 +2,7 @@
   <div class="page">
     <!-- <img src="./asset/logo-long.png" alt class="logo" /> -->
     <Row justify="center">
-      <h1>Hotpot Info</h1>
+      <h1>Hotspot Info</h1>
     </Row>
     <Row justify="center">
       <h2>{{ data?.miner?.infoSummary?.name }}</h2>
@@ -10,12 +10,11 @@
 
     <CellGroup>
       <Cell title="Helium Address" @click="openHeliumExplorer">
-        <!-- <Button :url="heliumAddr" plain type="default" size="small">View on Explore</Button> -->
-        <a href="#">View on Explore</a>
+        <a v-if="heliumAddr != ''" href="#">View on Explore</a>
       </Cell>
       <Cell title="Height Status">{{ data?.miner?.infoSummary?.height }} / {{ heliumHeight }}</Cell>
       <Cell title="Miner Version">{{ data?.miner?.infoSummary?.version }}</Cell>
-      <Cell title="Firmware Version">{{ data?.miner?.infoSummary?.firmwareVersion?.split('\n').slice(-2, -1)[0].split('=')[1].replaceAll('"', '') }}</Cell>
+      <Cell title="Firmware Version">{{ firmwareVersion }}</Cell>
       <Cell title="Region Plan">{{ region }}</Cell>
       <Cell title="Miner Connected to Blockchain">
         <Tag
@@ -26,7 +25,7 @@
       </Cell>
       <Cell title="Miner Relayed">
         <Tag v-if="data?.miner?.infoP2pStatus?.natType == 'symmetric'" type="warning">True</Tag>
-        <Tag v-else type="success">Flase</Tag>
+        <Tag v-else type="success">False</Tag>
       </Cell>
     </CellGroup>
 
@@ -45,29 +44,24 @@
         title="WLAN0 MAC"
       >{{ data?.device?.netInterface?.find(i => i.name == 'wlan0')?.hardwareAddr }}</Cell>
 
-      <Cell title="Miner Log" is-link to="/minerLog">
-      </Cell>
+      <Cell title="Miner Log" is-link to="/minerLog"></Cell>
     </CellGroup>
-    <br/>
-    <br/>
-    <br/>
+    <br />
+    <br />
+    <br />
   </div>
-  
 </template>
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue';
 import {
   Row,
-  Col,
   Tag,
-  Icon,
   Cell,
   CellGroup,
   Toast,
-  Button,
   Progress,
-  Divider,
+  Dialog,
 } from 'vant';
 
 const data = reactive({})
@@ -76,6 +70,7 @@ const heliumHeight = ref()
 const diskPercentage = ref(0)
 const memPercentage = ref(0)
 const region = ref('')
+const firmwareVersion = ref('')
 
 function openHeliumExplorer() {
   window.open(heliumAddr.value, '__blank')
@@ -96,16 +91,22 @@ function fetchData() {
       fillData(data)
     })
     .catch(r => {
-      Toast.fail("error :" + r)
+      console.error(r.message)
+      Dialog.alert({ message: "error :" + r })
     })
 }
 
 function fillData(data) {
-  region.value = data?.miner?.infoRegion ? data.miner.infoRegion.split('_')[1] : ''
-  region.value = region.value.toUpperCase()
-  heliumAddr.value = `https://explorer.helium.com/hotspots/${data?.miner?.peerAddr.slice(5)}`
-  diskPercentage.value = data?.device?.disk[0].usedPercent ? Math.ceil(data.device.disk[0].usedPercent) : 0
-  memPercentage.value = Math.ceil(data?.device?.mem ? data.device.mem.used * 100 / data.device.mem.total : 0)
+  const { miner, device } = data
+  region.value = miner?.infoRegion
+  heliumAddr.value = `https://explorer.helium.com/hotspots/${miner?.peerAddr?.slice(5)}`
+  diskPercentage.value = device?.disk?.length > 0 ? Math.ceil(device.disk[0].usedPercent) : 0
+  memPercentage.value = device?.mem ? Math.ceil(device.mem.used * 100 / device.mem.total) : 0
+  firmwareVersion.value = miner?.infoSummary?.firmwareVersion
+    ?.split('\n')
+    ?.slice(-2, -1)[0]
+    ?.split('=')[1]
+    ?.replaceAll('"', '')
 }
 
 function fetchHeliumHeight() {

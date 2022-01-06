@@ -217,11 +217,17 @@ func proxySetHandler(c *gin.Context) {
 }
 
 func stateHandler(c *gin.Context) {
-	d := diagTask.Data()
-	if d.Data != nil {
-		d.Data["aNotice"] = `do not use this api path "/" to integrate, use api under path "api/"`
+	var res map[string]interface{}
+	if c := c.Query("cache"); c == "true" {
+		res = diagTask.Data().Data
+	} else {
+		res = map[string]interface{}{
+			"device": diagTask.FetchDeviceInfo(),
+			"miner":  diagTask.FetchMinerInfo(),
+		}
 	}
-	c.JSON(200, RespOK(d.Data))
+	res["notice"] = `do not use this api path "/" to integrate, use api under path "api/"`
+	c.JSON(200, RespOK(res))
 }
 
 func minerInfoHandler(c *gin.Context) {
