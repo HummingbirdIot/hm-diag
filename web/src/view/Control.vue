@@ -17,9 +17,9 @@
 
   <CellGroup title="Snapshot">
     <Cell title="Generate snapshot">
-      <Button size="small" type="primary" plain @click="snapshot">Snapshot</Button>
+      <Button size="small" type="primary" plain @click="snapshot">Generate</Button>
     </Cell>
-    <Cell :title="'Snapshot latest file : \r\n' + state.time">
+    <Cell :title="'Snapshot file :' + state.time">
       <Button
         v-if="state.state == 'done'"
         size="small"
@@ -38,7 +38,7 @@
   </CellGroup>
   <CellGroup title="Advanced">
     <Cell title="Workspace reset">
-      <Button size="small" type="danger" plain @click="resetWorkspace">Rest</Button>
+      <Button size="small" type="danger" plain @click="resetWorkspace">Reset</Button>
     </Cell>
   </CellGroup>
 </template>
@@ -51,7 +51,7 @@ import * as axios from "axios"
 const file = ref(null)
 const showProgress = ref(false)
 const progress = ref(0)
-const state = reactive({ state: "unknown", file: "", time: "no generated snapshot" })
+const state = reactive({ state: "unknown", file: "", time: "not generated" })
 
 function reboot() {
   fetch('/api/v1/device/reboot', { method: 'POST' })
