@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"xdt.com/hm-diag/ctrl"
+	"xdt.com/hm-diag/devdis"
 	"xdt.com/hm-diag/diag"
 	"xdt.com/hm-diag/diag/miner"
 	"xdt.com/hm-diag/regist"
@@ -37,7 +38,7 @@ func RespOK(data interface{}) RespBody {
 func route(r *gin.Engine, _diagTask *diag.Task, _register *regist.Register) {
 	diagTask = _diagTask
 	register = _register
-
+	// r.OPTIONS("/", CORSMiddleware())
 	RouteStatic(r)
 	RoutePage(r)
 	RouteState(r)
@@ -168,6 +169,9 @@ func RouteState(r *gin.Engine) {
 	r.GET("/api/v1/miner/state", minerInfoHandler)
 	r.GET("/registInfo", registInfoHandler)
 	r.GET("/api/v1beta/miner/log", minerLogHandler)
+	r.GET("/api/v1/lan/hotspot", func(c *gin.Context) {
+		c.JSON(http.StatusOK, RespOK(devdis.Services()))
+	})
 }
 
 func RouteConfigProxy(r *gin.Engine) {
@@ -220,6 +224,7 @@ func stateHandler(c *gin.Context) {
 	var res map[string]interface{}
 	if c := c.Query("cache"); c == "true" {
 		res = diagTask.Data().Data
+		res["time"] = diagTask.Data().FetchTime
 	} else {
 		res = map[string]interface{}{
 			"device": diagTask.FetchDeviceInfo(),

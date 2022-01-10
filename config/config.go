@@ -1,10 +1,11 @@
 package config
 
 type GlobalConfig struct {
-	MinerUrl    string
-	IntervalSec uint
-	GitRepoDir  string
-	GitRepoUrl  string
+	LanDevIntface string
+	MinerUrl      string
+	IntervalSec   uint
+	GitRepoDir    string
+	GitRepoUrl    string
 }
 
 const MAIN_SCRIPT = "./hummingbird_iot.sh"

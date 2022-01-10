@@ -24,7 +24,7 @@ const data = ref("")
 
 function fetchData() {
   Toast.loading({
-    message: '加载中...',
+    message: 'loading...',
     forbidClick: true,
     loadingType: 'spinner',
     duration: 10 * 1000
