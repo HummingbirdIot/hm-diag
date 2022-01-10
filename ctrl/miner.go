@@ -12,18 +12,15 @@ import (
 
 	expect "github.com/ThomasRooney/gexpect"
 	"github.com/pkg/errors"
+	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/util"
 )
 
-const mainWorkDir = "/home/pi/hnt_iot/"
-
-// const mainWorkDir = "./mock/"
-
-const resyncMinerCmd = mainWorkDir + "trim_miner.sh"
-const snapshotTakeCmd = mainWorkDir + "snapshot_take.sh"
-const snapshotLoadCmd = mainWorkDir + "snapshot_load.sh"
-
-var restartMinerCmd = []string{mainWorkDir + "hummingbird_iot.sh", "restartMiner"}
+const resyncMinerCmd = "./trim_miner.sh"
+const snapshotTakeCmd = "./snapshot_take.sh take"
+const snapshotStateCmd = "./snapshot_take.sh state"
+const snapshotLoadCmd = "./snapshot_load.sh"
+const restartMinerCmd = config.MAIN_SCRIPT + " restartMiner"
 
 type SnapshotStateRes struct {
 	File  string    `json:"file"`
@@ -35,6 +32,7 @@ func ResyncMiner() error {
 	log.Println("to resync miner")
 	log.Println("exec cmd: bash", resyncMinerCmd)
 	cmd := exec.Command("bash", resyncMinerCmd)
+	cmd.Dir = config.Config().GitRepoDir
 	data, err := cmd.Output()
 	if err != nil {
 		log.Println("[error] resync miner error:", err.Error(), string(data))
@@ -47,7 +45,8 @@ func ResyncMiner() error {
 func RestartMiner() error {
 	log.Println("to restart miner")
 	log.Println("exec cmd:", restartMinerCmd)
-	cmd := exec.Command("bash", restartMinerCmd...)
+	cmd := exec.Command("bash", "-c", restartMinerCmd)
+	cmd.Dir = config.Config().GitRepoDir
 	data, err := cmd.Output()
 	if err != nil {
 		log.Println("[error] restart miner error:", err.Error(), string(data))
@@ -59,8 +58,9 @@ func RestartMiner() error {
 
 func SnapshotTake() {
 	fn := func() error {
-		log.Println("spawn cmd: bash", snapshotTakeCmd, "take")
-		cmd := exec.Command("bash", snapshotTakeCmd, "take")
+		log.Println("spawn cmd:", snapshotTakeCmd)
+		cmd := exec.Command("bash", "-c", snapshotTakeCmd)
+		cmd.Dir = config.Config().GitRepoDir
 		p, err := cmd.StdoutPipe()
 		if err != nil {
 			return errors.WithStack(errors.WithMessage(err, "start snapshot cmd pipe error"))
@@ -96,8 +96,9 @@ func SnapshotTake() {
 func SnapshotState() (*SnapshotStateRes, error) {
 	var result SnapshotStateRes
 	resPrefix := ">>>state:"
-	log.Println("spawn cmd: bash", snapshotTakeCmd)
-	cmd := exec.Command("bash", snapshotTakeCmd, "state")
+	log.Println("spawn cmd:", snapshotStateCmd)
+	cmd := exec.Command("bash", "-c", snapshotStateCmd)
+	cmd.Dir = config.Config().GitRepoDir
 	p, err := cmd.StdoutPipe()
 	if err != nil {
 		return nil, errors.WithStack(errors.WithMessage(err, "start snapshot state cmd pipe error"))

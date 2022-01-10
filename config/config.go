@@ -1,12 +1,14 @@
 package config
 
 type GlobalConfig struct {
-	MinerUrl    string
-	IntervalSec uint
-	GitRepoDir  string
-	GitRepoUrl  string
+	LanDevIntface string
+	MinerUrl      string
+	IntervalSec   uint
+	GitRepoDir    string
+	GitRepoUrl    string
 }
 
+const MAIN_SCRIPT = "./hummingbird_iot.sh"
 const PROXY_ETC_DIR = "/usr/local/etc/hm-diag"
 const PROXY_ETC_REPO = PROXY_ETC_DIR + "/git-repo-proxy.json"
 const PROXY_ETC_RELEASE = PROXY_ETC_DIR + "/git-release-proxy.json"

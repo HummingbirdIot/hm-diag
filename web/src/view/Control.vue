@@ -5,7 +5,7 @@
 
   <CellGroup title="Device">
     <Cell title="Reboot device">
-      <Button size="small" type="danger" plain @click="reboot">reboot</Button>
+      <Button size="small" type="danger" plain @click="reboot">Reboot</Button>
     </Cell>
     <Cell title="Resync miner">
       <Button size="small" type="primary" plain @click="resync">Resync</Button>
@@ -17,9 +17,9 @@
 
   <CellGroup title="Snapshot">
     <Cell title="Generate snapshot">
-      <Button size="small" type="primary" plain @click="snapshot">Snapshot</Button>
+      <Button size="small" type="primary" plain @click="snapshot">Generate</Button>
     </Cell>
-    <Cell :title="'Snapshot latest file : \r\n' + state.time">
+    <Cell :title="'Snapshot file :' + state.time">
       <Button
         v-if="state.state == 'done'"
         size="small"
@@ -38,7 +38,7 @@
   </CellGroup>
   <CellGroup title="Advanced">
     <Cell title="Workspace reset">
-      <Button size="small" type="danger" plain @click="resetWorkspace">Rest</Button>
+      <Button size="small" type="danger" plain @click="resetWorkspace">Reset</Button>
     </Cell>
   </CellGroup>
 </template>
@@ -51,7 +51,7 @@ import * as axios from "axios"
 const file = ref(null)
 const showProgress = ref(false)
 const progress = ref(0)
-const state = reactive({ state: "unknown", file: "", time: "" })
+const state = reactive({ state: "unknown", file: "", time: "not generated" })
 
 function reboot() {
   fetch('/api/v1/device/reboot', { method: 'POST' })
@@ -135,10 +135,12 @@ function snapshotState() {
     .then(r => r.json())
     .then(r => {
       console.log("snapshot state:", r)
-      if (r.status == 200 && r.data?.file && r.data?.state == 'done') {
-        state.file = r.data.file
-        state.time = r.data.time
-        state.state = r.data.state
+      if (r.code == 200) {
+        if (r.data?.file && r.data?.state == 'done') {
+          state.file = r.data.file
+          state.time = r.data.time
+          state.state = r.data.state
+        }
       } else {
         Dialog.alert({ message: "load snapshot state error, please retry after a while" })
       }
