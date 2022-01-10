@@ -29,8 +29,8 @@ jobs:
         env:
           version: ${{ steps.version.outputs.version }}
         run:  |
-          GOOS=linux GOARCH=arm64 sh build.sh
-          GOOS=linux GOARCH=amd64 sh build.sh
+          GOOS=linux GOARCH=arm64 bash build.sh
+          GOOS=linux GOARCH=amd64 bash build.sh
       - name: Release
         uses: softprops/action-gh-release@v1
         with:

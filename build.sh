@@ -1,4 +1,4 @@
-# !/bin/sh
+# !/bin/bash
 
 set -e
 
@@ -9,7 +9,7 @@ then
 	export GOARCH=arm64
 fi
 
-function buildDeb() {
+function buildDebPack() {
 	if [ -z "$version" ]
 	then
 		echo "environment varialble \"version\" is not set"
@@ -44,7 +44,7 @@ function pack() {
 
 case $1 in
 	'' )
-		buildDeb ;;
+		buildDebPack ;;
 	pack )
 		pack ;;
 	* )
