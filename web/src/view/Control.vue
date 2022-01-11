@@ -4,31 +4,31 @@
   </Cell>
 
   <CellGroup title="Device">
-    <Cell title="Reboot device">
+    <Cell title="Reboot Device">
       <Button size="small" type="danger" plain @click="reboot">Reboot</Button>
     </Cell>
-    <Cell title="Resync miner">
+    <Cell title="Resync Miner">
       <Button size="small" type="primary" plain @click="resync">Resync</Button>
     </Cell>
-    <Cell title="Restart miner">
+    <Cell title="Restart Miner">
       <Button size="small" type="primary" plain @click="restartMiner">Restart</Button>
     </Cell>
   </CellGroup>
 
   <CellGroup title="Snapshot">
-    <Cell title="Generate snapshot">
+    <Cell title="Generate Snapshot">
       <Button size="small" type="primary" plain @click="snapshot">Generate</Button>
     </Cell>
-    <Cell :title="'Snapshot file :' + state.time">
+    <Cell :title="'Snapshot File :' + snapState.time">
       <Button
-        v-if="state.state == 'done'"
+        v-if="snapState.state == 'done'"
         size="small"
         type="primary"
         plain
         @click="download"
       >Download</Button>
     </Cell>
-    <Cell title="Apply snapshot">
+    <Cell title="Apply Snapshot">
       <input id="file" class="hidden" ref="file" type="file" @change="handleFileChange" />
       <Button size="small" type="primary" plain @click="uploadSnapshot">Upload</Button>
     </Cell>
@@ -37,7 +37,17 @@
     </Cell>
   </CellGroup>
   <CellGroup title="Advanced">
-    <Cell title="Workspace reset">
+    <Cell title="Workspace Update">
+      <Button
+        v-if="toUpdateWorkspace === true"
+        size="small"
+        type="danger"
+        plain
+        @click="updateWorkspace"
+      >Update</Button>
+      <Tag v-if="toUpdateWorkspace === false" type="success">up to date</Tag>
+    </Cell>
+    <Cell title="Workspace Reset">
       <Button size="small" type="danger" plain @click="resetWorkspace">Reset</Button>
     </Cell>
   </CellGroup>
@@ -45,13 +55,15 @@
 
 <script setup>
 import { reactive, ref } from "vue"
-import { CellGroup, Cell, Button, Toast, Dialog, Progress, Notify } from 'vant'
+import { CellGroup, Cell, Button, Toast, Dialog, Progress, Notify, Tag } from 'vant'
 import * as axios from "axios"
+import * as api from "../api/backend"
 
+const toUpdateWorkspace = ref(null)
 const file = ref(null)
 const showProgress = ref(false)
 const progress = ref(0)
-const state = reactive({ state: "unknown", file: "", time: "not generated" })
+const snapState = reactive({ state: "unknown", file: "", time: "not generated" })
 
 function reboot() {
   fetch('/api/v1/device/reboot', { method: 'POST' })
@@ -137,9 +149,9 @@ function snapshotState() {
       console.log("snapshot state:", r)
       if (r.code == 200) {
         if (r.data?.file && r.data?.state == 'done') {
-          state.file = r.data.file
-          state.time = r.data.time
-          state.state = r.data.state
+          snapState.file = r.data.file
+          snapState.time = r.data.time
+          snapState.state = r.data.state
         }
       } else {
         Dialog.alert({ message: "load snapshot state error, please retry after a while" })
@@ -152,7 +164,7 @@ function snapshotState() {
 }
 
 function download() {
-  open(`/api/v1/miner/snapshot/file/${state.file}`, "_blank")
+  open(`/api/v1/miner/snapshot/file/${snapState.file}`, "_blank")
 }
 
 function handleFileChange() {
@@ -206,6 +218,29 @@ function resetWorkspace() {
   })
 }
 
+async function checkWorkspaceUpdate() {
+  api.checkWorkspaceUpdate()
+    .then((r) => {
+      toUpdateWorkspace.value = r
+    })
+    .catch(err => {
+      const msg = err.response?.data?.message ? err.response.data.message : err.message
+      Notify("failed to check workspace update:" + msg)
+    })
+}
+
+function updateWorkspace() {
+  api.workspaceUpdate()
+    .then(r => {
+      Dialog.alert({ message: "Request success. check after several minutes" });
+    })
+    .catch(err => {
+      console.log('========', err.response?.data?.message)
+      const msg = err.response?.data?.message ? err.response.data.message : err.message
+      Dialog.alert({ type: "warning", message: msg })
+    })
+}
+
 function doResetWorkspace() {
   fetch("/api/v1/workspace/reset", {
     method: "POST"
@@ -232,6 +267,7 @@ function doResetWorkspace() {
 }
 
 snapshotState()
+checkWorkspaceUpdate()
 
 </script>
 

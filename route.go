@@ -17,6 +17,7 @@ import (
 	"xdt.com/hm-diag/diag"
 	"xdt.com/hm-diag/diag/miner"
 	"xdt.com/hm-diag/regist"
+	"xdt.com/hm-diag/util"
 )
 
 //go:embed web/release/*
@@ -161,6 +162,18 @@ func RouteCtrl(r *gin.Engine) {
 			c.JSON(200, RespOK(nil))
 		}
 	})
+	r.GET("/api/v1/workspace/update", func(c *gin.Context) {
+		r, err := ctrl.IsGitRepoToUpdate()
+		if err != nil {
+			c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+		} else {
+			c.JSON(200, RespOK(r))
+		}
+	})
+	r.POST("/api/v1/workspace/update", func(c *gin.Context) {
+		ctrl.ExecMainUpdate()
+		c.JSON(200, RespOK(nil))
+	})
 }
 
 func RouteState(r *gin.Engine) {
@@ -172,6 +185,7 @@ func RouteState(r *gin.Engine) {
 	r.GET("/api/v1/lan/hotspot", func(c *gin.Context) {
 		c.JSON(http.StatusOK, RespOK(devdis.Services()))
 	})
+	r.GET("/api/v1/proxy/heliumApi", heliumApiProxyHandler)
 }
 
 func RouteConfigProxy(r *gin.Engine) {
@@ -286,5 +300,16 @@ func minerLogHandler(c *gin.Context) {
 	} else {
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 		log.Println("query miner log error: ", err)
+	}
+}
+
+func heliumApiProxyHandler(c *gin.Context) {
+	path := c.Query("path")
+	s, err := util.HeliumApiProxy(path)
+	if err != nil {
+		log.Printf("helium proxy apt %s error: %s", path, err)
+		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+	} else {
+		c.JSON(200, RespOK(s))
 	}
 }

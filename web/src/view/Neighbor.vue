@@ -7,6 +7,30 @@
       </div>
     </Cell>
     <Search v-model="searchTxt" placeholder="search hotspot name, version, ip"></Search>
+    <Cell>
+      <div style>
+        <Icon name="info-o"></Icon>
+        <span class="sum-info">
+          Total: {{
+            filteredNeighbors?.length != undefined
+              ? filteredNeighbors.length
+              : '-'
+          }}
+        </span>
+        <span class="sum-info">
+          Syncing: {{
+            heliumHeight != 0
+              ? filteredNeighbors?.filter(n => heliumHeight - n.height > 1).length
+              : '-'
+          }}
+        </span>
+        <span class="sum-info">
+          Relayed: {{
+            filteredNeighbors?.filter(n => n?.isRelay)?.length
+          }}
+        </span>
+      </div>
+    </Cell>
     <Cell v-for="n in filteredNeighbors" is-link @click="openHotspotWeb(n)">
       <template #title>
         <div class="pot-name">{{ n.showName ? n.showName : n.address }}</div>
@@ -34,6 +58,8 @@
 <script setup>
 import { ref, reactive, onMounted, watch } from "vue"
 import { CellGroup, Cell, Search, Dialog, Toast, Tag, Icon, Notify } from 'vant'
+
+import { fetchHeliumHeight } from '../api/helium'
 
 let searchTxt = ref('')
 let neighbors = ref([])
@@ -75,18 +101,6 @@ function loadLanHotspots() {
 function openHotspotWeb(d) {
   const addr = `http://${d.address}:${d.port}`
   window.open(addr, '_blank')
-}
-
-function fetchHeliumHeight() {
-  const api = 'https://api.helium.io/v1/blocks/height'
-  fetch(api)
-    .then(r => r.json())
-    .then(r => {
-      heliumHeight.value = r.data.height
-    }).catch(err => {
-      Dialog.alert({ message: 'Failed to load helium block height' })
-      console.log('Failed to load helium block height', err)
-    })
 }
 
 function fetchHotspotsInfo() {
@@ -137,7 +151,12 @@ watch(searchTxt, v => {
 })
 
 onMounted(async () => {
-  fetchHeliumHeight()
+  fetchHeliumHeight().then(h => {
+    heliumHeight.value = h
+  }).catch(err => {
+    Dialog.alert({ message: "Failed to load helium block height" });
+    console.log("Failed to load helium block height", err);
+  })
   loadLanHotspots()
   // const mockData = [
   //   {
@@ -158,6 +177,13 @@ onMounted(async () => {
 </script>
 
 <style lang="less" scoped>
+.sum-info {
+  margin-left: 6px;
+  margin-right: 6px;
+  font-size: 14px;
+  font-weight: 300;
+  color: #333;
+}
 .pot-name {
   font-size: 16px;
   font-weight: 500;
