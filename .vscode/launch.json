@@ -10,7 +10,7 @@
 			"request": "launch",
 			"mode": "auto",
 			"program": ".",
-			"args": ["-gitRepo", "/tmp/hnt_iot_release"]
+			"args": ["-gitRepo", "./test/gitRepoMock"]
 		}
 	]
 }
