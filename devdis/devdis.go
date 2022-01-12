@@ -129,7 +129,7 @@ func (d *DevDiscovery) Register() error {
 		return err
 	}
 
-	log.Println("Entry published. Hit ^C to exit.")
+	log.Println("Discovery Entry published.")
 
 	for {
 		select {}

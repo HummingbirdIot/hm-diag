@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -10,12 +11,16 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"xdt.com/hm-diag/api"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/devdis"
 	"xdt.com/hm-diag/diag"
 	"xdt.com/hm-diag/regist"
 	"xdt.com/hm-diag/util"
 )
+
+//go:embed web/release/*
+var webFS embed.FS
 
 type Opt struct {
 	Port          int
@@ -52,7 +57,9 @@ func init() {
 	flag.Usage = usage
 
 	flag.Parse()
+	// store config as global
 	config.InitConf(config.GlobalConfig{
+		ApiPort:       opt.Port,
 		LanDevIntface: opt.LanDevIntface,
 		MinerUrl:      opt.MinerUrl,
 		GitRepoDir:    opt.GitRepoDir,
@@ -61,31 +68,31 @@ func init() {
 	})
 }
 
-var task *diag.Task
-
 func main() {
+	diag.InitTask(*config.Config())
+	diagTask := diag.TaskInstance()
 
-	task = &diag.Task{Config: diag.TaskConfig{MinerUrl: opt.MinerUrl, IntervalSec: opt.IntervalSec}}
 	if flag.Arg(0) == "get" {
 		if !opt.Verbose {
 			log.SetOutput(io.Discard)
 		}
-		task.Do()
-		s, _ := json.MarshalIndent(task.Data(), "", "  ")
+		diagTask.Do()
+		s, _ := json.MarshalIndent(diagTask.Data(), "", "  ")
 		os.Stdout.WriteString(string(s))
 		return
 	} else if flag.Arg(0) == "server" || flag.Arg(0) == "" {
 		optJson, _ := json.Marshal(opt)
 		log.Println("options: ", string(optJson))
-		go task.StartTaskJob(true)
-		register := &regist.Register{ApiPort: opt.Port, RegistryApiPort: 6753, ReistIntervalSec: 30}
-		go register.StartRegistJob()
 
+		// init job
+		go diagTask.StartTaskJob(true)
+		go regist.StartRegistJob()
 		util.Sgo(devdis.Init, "init device discovery error")
 
+		// http server
 		r := gin.Default()
-		r.Use(CORSMiddleware())
-		route(r, task, register)
+		r.Use(api.CORSMiddleware())
+		api.Route(r, webFS)
 		r.Run(fmt.Sprintf(":%d", opt.Port))
 	} else {
 		flag.Usage()

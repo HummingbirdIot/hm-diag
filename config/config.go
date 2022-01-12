@@ -1,6 +1,7 @@
 package config
 
 type GlobalConfig struct {
+	ApiPort       int
 	LanDevIntface string
 	MinerUrl      string
 	IntervalSec   uint

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"time"
 
+	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag/device"
 )
 
@@ -21,23 +22,40 @@ type Register struct {
 	ReistIntervalSec int64
 }
 
-func (r *Register) StartRegistJob() {
+var reg *Register = nil
+
+func initInstance(conf *config.GlobalConfig) {
+	reg = &Register{
+		ApiPort:          conf.ApiPort,
+		RegistryApiPort:  6753,
+		ReistIntervalSec: 30,
+	}
+}
+
+func Instance() *Register {
+	return reg
+}
+
+func StartRegistJob() {
+	if reg == nil {
+		initInstance(config.Config())
+	}
 	log.Printf("regist job scheduler start")
 
-	ticker := time.NewTicker(time.Duration(r.ReistIntervalSec) * time.Second)
+	ticker := time.NewTicker(time.Duration(reg.ReistIntervalSec) * time.Second)
 	quitTask := make(chan struct{})
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
-				r.Do()
+				reg.Do()
 			case <-quitTask:
 				ticker.Stop()
 			}
 		}
 	}()
 
-	r.Do()
+	reg.Do()
 }
 
 func (r *Register) Do() {
@@ -46,7 +64,7 @@ func (r *Register) Do() {
 			log.Println("do regist error", r)
 		}
 	}()
-	registry, err := GetDefaultRegistry()
+	registry, err := registryIp()
 	if err == nil {
 		registryApi := "http://" + registry.String() + ":" + strconv.Itoa(r.RegistryApiPort) + "/regist"
 		info, _ := r.GetRegistInfo()
@@ -69,7 +87,7 @@ func (r *Register) Do() {
 	}
 }
 
-func GetDefaultRegistry() (*net.IPAddr, error) {
+func registryIp() (*net.IPAddr, error) {
 	ip, err := net.ResolveIPAddr("", defaultRegistryHost)
 	return ip, err
 }
