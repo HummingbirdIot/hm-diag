@@ -105,6 +105,10 @@ function openHotspotWeb(d) {
 
 function fetchHotspotsInfo() {
   for (const n of neighbors.value) {
+    if (!n.address || !n.port) {
+      console.error('no address or port', n)
+      continue
+    }
     const api = `http://${n.address}:${n.port}/state?cache=true`
     const ctrl = new AbortController()
     const timeoutId = setTimeout(() => ctrl.abort(), 5000)

@@ -70,13 +70,13 @@ func Init() error {
 		go func() {
 			err := dis.Register()
 			if err != nil {
-				log.Println("Discovery register error", err)
+				log.Println("Discovery register error >>>>>>", err)
 			}
 		}()
 		go func() {
 			err := dis.Browse()
 			if err != nil {
-				log.Println("Discovery browse error", err)
+				log.Println("Discovery browse error >>>>>>", err)
 			}
 		}()
 		log.Println("mdns inited discovery")
@@ -190,18 +190,24 @@ func (d *DevDiscovery) Browse() error {
 		select {
 		case service = <-sb.AddChannel:
 			log.Printf("Discovery service NEW: %#v\n", service)
-			service, err := server.ResolveService(service.Interface, service.Protocol, service.Name,
-				service.Type, service.Domain, avahi.ProtoUnspec, 0)
-			if err == nil {
-				log.Println("Discovery service RESOLVED >>", service.Address)
-				if service.Interface == d.netInterfaceIndex {
-					key := fmt.Sprintf("%s.%s.%s", service.Name, service.Type, service.Domain)
+			log.Printf("Discovery net interface index compare  service=expect %d=%d\n",
+				service.Interface, d.netInterfaceIndex)
+			if service.Interface == d.netInterfaceIndex {
+				service, err := server.ResolveService(service.Interface, service.Protocol, service.Name,
+					service.Type, service.Domain, avahi.ProtoUnspec, 0)
+				key := fmt.Sprintf("%s.%s.%s", service.Name, service.Type, service.Domain)
+				if err == nil {
+					log.Println("Discovery service RESOLVED >>", service.Address)
 					d.Services[key] = service
 					log.Printf("Discovered service ADDED: %#v\n", service)
+				} else {
+					log.Println("Discovered service RESOLVE ERROR:", err)
 				}
 			}
 		case service = <-sb.RemoveChannel:
 			log.Println("Discovery sevice REMOVE: ", service)
+			log.Printf("Discovery net interface index compare  service=expect %d=%d\n",
+				service.Interface, d.netInterfaceIndex)
 			if service.Interface == d.netInterfaceIndex {
 				key := fmt.Sprintf("%s.%s.%s", service.Name, service.Type, service.Domain)
 				delete(d.Services, key)
