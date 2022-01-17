@@ -198,6 +198,12 @@ func (d *DevDiscovery) Browse() error {
 				key := fmt.Sprintf("%s.%s.%s", service.Name, service.Type, service.Domain)
 				if err == nil {
 					log.Println("Discovery service RESOLVED >>", service.Address)
+					// remove the service which has the same address
+					for k, v := range d.Services {
+						if v.Address == service.Address {
+							delete(d.Services, k)
+						}
+					}
 					d.Services[key] = service
 					log.Printf("Discovered service ADDED: %#v\n", service)
 				} else {
