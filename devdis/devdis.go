@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	"github.com/godbus/dbus/v5"
 	"github.com/holoplot/go-avahi"
@@ -60,7 +61,6 @@ func Init() error {
 		for i, itf := range l {
 			log.Println("net interface", i+1, itf.Name)
 			if itf.Name == config.Config().LanDevIntface {
-				// TODO: check if avahi interface index is correct
 				dis.netInterfaceIndex = int32(i) + 1
 				log.Println("interface index:", i+1)
 			}
@@ -71,15 +71,32 @@ func Init() error {
 			err := dis.Register()
 			if err != nil {
 				log.Println("Discovery register error >>>>>>", err)
+			} else {
+				log.Println("Discovery register finished")
 			}
 		}()
 		go func() {
 			err := dis.Browse()
 			if err != nil {
 				log.Println("Discovery browse error >>>>>>", err)
+			} else {
+				log.Println("Discovery browse end")
 			}
 		}()
 		log.Println("mdns inited discovery")
+
+		// retry register after some time
+		// when hostname is duplicated, avahi will retry different hostname
+		// assume avahi has got a stable hostname after some time
+		time.Sleep(time.Minute * 5)
+		log.Println("Discovery register retry")
+		err = dis.Register()
+		if err != nil {
+			log.Println("Discovery register retry error >>>>>>", err)
+		} else {
+			log.Println("Discovery register retry finished")
+		}
+
 	} else {
 		log.Println("do not init device discovery repeadly")
 	}
@@ -117,6 +134,8 @@ func (d *DevDiscovery) Register() error {
 		return err
 	}
 	txt := [][]byte{[]byte("cap=hm-diag"), []byte("other=xxx")}
+	log.Printf("Discovery registering hostname:%s service:%s fqdn:%s txt:%s\n",
+		hostname, service, fqdn, txt)
 	err = eg.AddService(avahi.InterfaceUnspec, avahi.ProtoInet, 0, hostname, service, "local", fqdn, 80, txt)
 	if err != nil {
 		log.Printf("AddService() failed: %v\n", err)
@@ -131,10 +150,7 @@ func (d *DevDiscovery) Register() error {
 
 	log.Println("Discovery Entry published.")
 
-	for {
-		select {}
-	}
-	// TODO: retry
+	return nil
 }
 
 func (d *DevDiscovery) Browse() error {
