@@ -16,11 +16,13 @@ import (
 	"xdt.com/hm-diag/util"
 )
 
-const resyncMinerCmd = "./trim_miner.sh"
-const snapshotTakeCmd = "./snapshot_take.sh take"
-const snapshotStateCmd = "./snapshot_take.sh state"
-const snapshotLoadCmd = "./snapshot_load.sh"
-const restartMinerCmd = config.MAIN_SCRIPT + " restartMiner"
+const (
+	resyncMinerCmd   = "./trim_miner.sh"
+	snapshotTakeCmd  = "./snapshot_take.sh take"
+	snapshotStateCmd = "./snapshot_take.sh state"
+	snapshotLoadCmd  = "./snapshot_load.sh"
+	restartMinerCmd  = config.MAIN_SCRIPT + " restartMiner"
+)
 
 type SnapshotStateRes struct {
 	File  string    `json:"file"`
@@ -45,7 +47,7 @@ func ResyncMiner() error {
 func RestartMiner() error {
 	log.Println("to restart miner")
 	log.Println("exec cmd:", restartMinerCmd)
-	cmd := exec.Command("bash", "-c", restartMinerCmd)
+	cmd := exec.Command("bash", strings.Split(restartMinerCmd, " ")...)
 	cmd.Dir = config.Config().GitRepoDir
 	data, err := cmd.Output()
 	if err != nil {
@@ -58,8 +60,8 @@ func RestartMiner() error {
 
 func SnapshotTake() {
 	fn := func() error {
-		log.Println("spawn cmd:", snapshotTakeCmd)
-		cmd := exec.Command("bash", "-c", snapshotTakeCmd)
+		log.Println("spawn cmd: bash ", snapshotTakeCmd)
+		cmd := exec.Command("bash", strings.Split(snapshotTakeCmd, " ")...)
 		cmd.Dir = config.Config().GitRepoDir
 		p, err := cmd.StdoutPipe()
 		if err != nil {
@@ -97,7 +99,7 @@ func SnapshotState() (*SnapshotStateRes, error) {
 	var result SnapshotStateRes
 	resPrefix := ">>>state:"
 	log.Println("spawn cmd:", snapshotStateCmd)
-	cmd := exec.Command("bash", "-c", snapshotStateCmd)
+	cmd := exec.Command("bash", strings.Split(snapshotStateCmd, " ")...)
 	cmd.Dir = config.Config().GitRepoDir
 	p, err := cmd.StdoutPipe()
 	if err != nil {

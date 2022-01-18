@@ -94,6 +94,8 @@ import {
   Dialog,
   Icon,
 } from 'vant';
+import * as hapi from './api/helium'
+
 const data = reactive({})
 const heliumAddr = ref('')
 const heliumHeight = ref()
@@ -140,11 +142,12 @@ function fillData(data) {
 }
 
 function fetchHeliumHeight() {
-  const api = 'https://api.helium.io/v1/blocks/height'
-  fetch(api)
-    .then(r => r.json())
+  hapi.fetchHeliumHeight()
     .then(r => {
-      heliumHeight.value = r.data.height
+      heliumHeight.value = r
+    }).catch(err => {
+      Dialog.alert({ message: "Failed to load helium block height" });
+      console.log("Failed to load helium block height", err);
     })
 }
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	"github.com/godbus/dbus/v5"
 	"github.com/holoplot/go-avahi"
@@ -50,6 +51,7 @@ func Services() []Dev {
 
 func Init() error {
 	if dis == nil {
+		// init
 		dis = &DevDiscovery{Services: make(map[string]avahi.Service)}
 		l, err := net.Interfaces()
 		if err != nil {
@@ -59,14 +61,42 @@ func Init() error {
 		for i, itf := range l {
 			log.Println("net interface", i+1, itf.Name)
 			if itf.Name == config.Config().LanDevIntface {
-				// TODO: check if avahi interface index is correct
 				dis.netInterfaceIndex = int32(i) + 1
 				log.Println("interface index:", i+1)
 			}
 		}
-		go dis.Register()
-		go dis.Browse()
+
+		// starts
+		go func() {
+			err := dis.Register()
+			if err != nil {
+				log.Println("Discovery register error >>>>>>", err)
+			} else {
+				log.Println("Discovery register finished")
+			}
+		}()
+		go func() {
+			err := dis.Browse()
+			if err != nil {
+				log.Println("Discovery browse error >>>>>>", err)
+			} else {
+				log.Println("Discovery browse end")
+			}
+		}()
 		log.Println("mdns inited discovery")
+
+		// retry register after some time
+		// when hostname is duplicated, avahi will retry different hostname
+		// assume avahi has got a stable hostname after some time
+		time.Sleep(time.Minute * 5)
+		log.Println("Discovery register retry")
+		err = dis.Register()
+		if err != nil {
+			log.Println("Discovery register retry error >>>>>>", err)
+		} else {
+			log.Println("Discovery register retry finished")
+		}
+
 	} else {
 		log.Println("do not init device discovery repeadly")
 	}
@@ -104,6 +134,8 @@ func (d *DevDiscovery) Register() error {
 		return err
 	}
 	txt := [][]byte{[]byte("cap=hm-diag"), []byte("other=xxx")}
+	log.Printf("Discovery registering hostname:%s service:%s fqdn:%s txt:%s\n",
+		hostname, service, fqdn, txt)
 	err = eg.AddService(avahi.InterfaceUnspec, avahi.ProtoInet, 0, hostname, service, "local", fqdn, 80, txt)
 	if err != nil {
 		log.Printf("AddService() failed: %v\n", err)
@@ -116,12 +148,9 @@ func (d *DevDiscovery) Register() error {
 		return err
 	}
 
-	log.Println("Entry published. Hit ^C to exit.")
+	log.Println("Discovery Entry published.")
 
-	for {
-		select {}
-	}
-	// TODO: retry
+	return nil
 }
 
 func (d *DevDiscovery) Browse() error {
@@ -176,22 +205,36 @@ func (d *DevDiscovery) Browse() error {
 	for {
 		select {
 		case service = <-sb.AddChannel:
-			log.Printf("ServiceBrowser ADD: %#v\n", service)
-			service, err := server.ResolveService(service.Interface, service.Protocol, service.Name,
-				service.Type, service.Domain, avahi.ProtoUnspec, 0)
-			if err == nil {
-				log.Println(" RESOLVED >>", service.Address)
-			}
+			log.Printf("Discovery service NEW: %#v\n", service)
+			log.Printf("Discovery net interface index compare  service=expect %d=%d\n",
+				service.Interface, d.netInterfaceIndex)
 			if service.Interface == d.netInterfaceIndex {
+				service, err := server.ResolveService(service.Interface, service.Protocol, service.Name,
+					service.Type, service.Domain, avahi.ProtoUnspec, 0)
 				key := fmt.Sprintf("%s.%s.%s", service.Name, service.Type, service.Domain)
-				d.Services[key] = service
+				if err == nil {
+					log.Println("Discovery service RESOLVED >>", service.Address)
+					// remove the service which has the same address
+					for k, v := range d.Services {
+						if v.Address == service.Address {
+							delete(d.Services, k)
+						}
+					}
+					d.Services[key] = service
+					log.Printf("Discovered service ADDED: %#v\n", service)
+				} else {
+					log.Println("Discovered service RESOLVE ERROR:", err)
+				}
 			}
 		case service = <-sb.RemoveChannel:
+			log.Println("Discovery sevice REMOVE: ", service)
+			log.Printf("Discovery net interface index compare  service=expect %d=%d\n",
+				service.Interface, d.netInterfaceIndex)
 			if service.Interface == d.netInterfaceIndex {
 				key := fmt.Sprintf("%s.%s.%s", service.Name, service.Type, service.Domain)
 				delete(d.Services, key)
+				log.Println("Discovery service REMOVED: ", service)
 			}
-			log.Println("ServiceBrowser REMOVE: ", service)
 		}
 	}
 

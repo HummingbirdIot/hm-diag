@@ -4,6 +4,7 @@ import (
 	"log"
 	"time"
 
+	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag/device"
 	"xdt.com/hm-diag/diag/miner"
 )
@@ -24,6 +25,16 @@ type Task struct {
 type TaskData struct {
 	FetchTime time.Time              `json:"fetchTime"`
 	Data      map[string]interface{} `json:"data"`
+}
+
+var taskSingleton *Task
+
+func InitTask(conf config.GlobalConfig) {
+	taskSingleton = &Task{Config: TaskConfig{MinerUrl: conf.MinerUrl, IntervalSec: conf.IntervalSec}}
+}
+
+func TaskInstance() *Task {
+	return taskSingleton
 }
 
 func (t *Task) Data() TaskData {
