@@ -17,6 +17,56 @@ import (
 	unet "github.com/shirou/gopsutil/v3/net"
 )
 
+type DiskInfo struct {
+	Free        uint64  `json:"free"`
+	Fstype      string  `json:"fstype"`
+	Path        string  `json:"path"`
+	Total       uint64  `json:"total"`
+	Used        uint64  `json:"used"`
+	UsedPercent float64 `json:"usedPercent"`
+}
+
+type NetInterfaceInfo struct {
+	Index        uint   `json:"index"`
+	Mtu          uint   `json:"mtu"`
+	Name         string `json:"name"`
+	HardwareAddr string `json:"hardwareAddr"`
+	Addrs        []struct {
+		Addr string `json:"addr"`
+	} `json:"addrs"`
+}
+
+type WifiInfo struct {
+	Connected bool   `json:"connected"`
+	Name      string `json:"name"`
+	Powered   bool   `json:"powered"`
+}
+type MemInfo struct {
+	Available uint64 `json:"available"`
+	Buffers   uint64 `json:"buffers"`
+	Cached    uint64 `json:"cached"`
+	Free      uint64 `json:"free"`
+	Shared    uint64 `json:"shared"`
+	Total     uint64 `json:"total"`
+	Used      uint64 `json:"used"`
+}
+type HostInfo struct {
+	Hostname string `json:"hostname"`
+	Uptime   uint64 `json:"uptime"`
+	BootTime uint64 `json:"bootTime"`
+}
+
+type DeviceInfo struct {
+	CpuFreq      uint               `json:"cpuFreq"`
+	CpuPercent   []float64          `json:"cpuPercent"`
+	CpuTemp      string             `json:"cpuTemp"`
+	Disk         DiskInfo           `json:"disk"`
+	Host         HostInfo           `json:"host"`
+	Mem          MemInfo            `json:"mem"`
+	NetInterface []NetInterfaceInfo `json:"netInterface"`
+	Wifi         WifiInfo           `json:"wifi"`
+}
+
 func GetWifiInfo() (map[string]interface{}, error) {
 	conn, err := dbus.ConnectSystemBus()
 	if err != nil {
@@ -68,31 +118,35 @@ func GetInfo() map[string]interface{} {
 	res := make(map[string]interface{})
 
 	hostInfo, _ := host.Info()
-	res["host"] = hostInfo
+	res["host"] = HostInfo{
+		Hostname: hostInfo.Hostname,
+		Uptime:   hostInfo.Uptime,
+		BootTime: hostInfo.BootTime,
+	}
 
 	memInfo, _ := mem.VirtualMemory()
-	res["mem"] = map[string]interface{}{
-		"total":     memInfo.Total,
-		"available": memInfo.Available,
-		"free":      memInfo.Free,
-		"used":      memInfo.Used,
-		"buffers":   memInfo.Buffers,
-		"cached":    memInfo.Cached,
-		"shared":    memInfo.Shared,
+	res["mem"] = MemInfo{
+		Total:     memInfo.Total,
+		Available: memInfo.Available,
+		Free:      memInfo.Free,
+		Used:      memInfo.Used,
+		Buffers:   memInfo.Buffers,
+		Cached:    memInfo.Cached,
+		Shared:    memInfo.Shared,
 	}
 
 	netInterface, _ := unet.Interfaces()
 	res["netInterface"] = netInterface
 
 	diskInfo, _ := disk.Usage("/")
-	res["disk"] = []interface{}{
-		map[string]interface{}{
-			"path":        diskInfo.Path,
-			"fstype":      diskInfo.Fstype,
-			"total":       diskInfo.Total,
-			"free":        diskInfo.Free,
-			"used":        diskInfo.Used,
-			"usedPercent": diskInfo.UsedPercent,
+	res["disk"] = []DiskInfo{
+		{
+			Path:        diskInfo.Path,
+			Fstype:      diskInfo.Fstype,
+			Total:       diskInfo.Total,
+			Free:        diskInfo.Free,
+			Used:        diskInfo.Used,
+			UsedPercent: diskInfo.UsedPercent,
 		},
 	}
 

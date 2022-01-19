@@ -51,6 +51,9 @@
       <Button size="small" type="danger" plain @click="resetWorkspace">Reset</Button>
     </Cell>
   </CellGroup>
+  <br />
+  <br />
+  <br />
 </template>
 
 <script setup>
@@ -125,10 +128,8 @@ function restartMiner() {
     })
 }
 
-// open(`/api/v1/miner/snapshot/file/${r.data.file}`, "_blank")
-
 function snapshot() {
-  fetch("/api/v1/miner/snapshot", {
+  fetch("/inner/api/v1/miner/snapshot", {
     method: "POST"
   }).then(r => r.json())
     .then(r => {
@@ -143,7 +144,7 @@ function snapshot() {
 
 
 function snapshotState() {
-  fetch("/api/v1/miner/snapshot/state")
+  fetch("/inner/api/v1/miner/snapshot/state")
     .then(r => r.json())
     .then(r => {
       console.log("snapshot state:", r)
@@ -164,7 +165,7 @@ function snapshotState() {
 }
 
 function download() {
-  open(`/api/v1/miner/snapshot/file/${snapState.file}`, "_blank")
+  open(`/inner/api/v1/miner/snapshot/file/${snapState.file}`, "_blank")
 }
 
 function handleFileChange() {
@@ -173,7 +174,7 @@ function handleFileChange() {
   fd.append("file", file.value.files[0])
   showProgress.value = true
   Notify({ type: "warning", duration: 5 * 1000, message: "Don't operate till the end" })
-  axios.default.post("/api/v1/miner/snapshot/apply", fd, {
+  axios.default.post("/inner/api/v1/miner/snapshot/apply", fd, {
     onUploadProgress: (e) => {
       progress.value = Math.round(e.loaded * 100 / e.total)
       if (progress.value == 100) {
@@ -242,7 +243,7 @@ function updateWorkspace() {
 }
 
 function doResetWorkspace() {
-  fetch("/api/v1/workspace/reset", {
+  fetch("/inner/api/v1/workspace/reset", {
     method: "POST"
   }).then(r => r.json())
     .then(r => {

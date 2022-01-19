@@ -91,7 +91,7 @@ function query() {
     loadingType: 'spinner',
     duration: 10 * 1000
   });
-  fetch(`/api/v1beta/miner/log?since=${ft}&until=${tt}&filter=${filterTxt.value}`)
+  fetch(`/inner/api/v1beta/miner/log?since=${ft}&until=${tt}&filter=${filterTxt.value}`)
     .then(r => r.json())
     .then(r => {
       if (r.code == 200) {

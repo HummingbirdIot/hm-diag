@@ -115,7 +115,7 @@ function fetchData() {
     loadingType: 'spinner',
     duration: 10 * 1000
   });
-  fetch('/state')
+  fetch('/inner/state')
     .then(r => r.json())
     .then(r => {
       Toast.clear()

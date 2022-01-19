@@ -68,11 +68,13 @@ func snapshotDownload(c *gin.Context) {
 	if err != nil {
 		log.Println("get snapshot, wrong path param", f)
 		c.JSON(400, RespBody{Code: 400, Message: "wrong path param"})
+		return
 	}
 	f = string(b)
 	if !strings.HasPrefix(f, "/tmp/") {
 		log.Println("get snapshot, wrong path param", f)
 		c.JSON(400, RespBody{Code: 400, Message: "wrong path param"})
+		return
 	}
 	c.Header("Content-Disposition", "attachment; filename=\""+path.Base(f)+"\"")
 	c.File(f)

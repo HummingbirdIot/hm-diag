@@ -19,8 +19,14 @@ import (
 	"xdt.com/hm-diag/util"
 )
 
+// TODO: unit test
+// TODO: log format -- TRACE,INFO,WARN,ERROR
+
 //go:embed web/release/*
 var webFS embed.FS
+
+//go:embed api/swagger_ui/*
+var swagFS embed.FS
 
 type Opt struct {
 	Port          int
@@ -92,7 +98,7 @@ func main() {
 		// http server
 		r := gin.Default()
 		r.Use(api.CORSMiddleware())
-		api.Route(r, webFS)
+		api.Route(r, webFS, swagFS)
 		r.Run(fmt.Sprintf(":%d", opt.Port))
 	} else {
 		flag.Usage()

@@ -1,0 +1,570 @@
+consumes:
+- application/json
+definitions:
+  AllStateInfo:
+    properties:
+      device:
+        $ref: '#/definitions/DeviceInfo'
+      miner:
+        $ref: '#/definitions/MinerInfo'
+    type: object
+    x-go-package: xdt.com/hm-diag/diag
+  Dev:
+    properties:
+      address:
+        type: string
+        x-go-name: Address
+      host:
+        type: string
+        x-go-name: Host
+      name:
+        type: string
+        x-go-name: Name
+      port:
+        format: uint16
+        type: integer
+        x-go-name: Port
+    type: object
+    x-go-package: xdt.com/hm-diag/devdis
+  DeviceInfo:
+    properties:
+      cpuFreq:
+        format: uint64
+        type: integer
+        x-go-name: CpuFreq
+      cpuPercent:
+        items:
+          format: double
+          type: number
+        type: array
+        x-go-name: CpuPercent
+      cpuTemp:
+        type: string
+        x-go-name: CpuTemp
+      disk:
+        $ref: '#/definitions/DiskInfo'
+      host:
+        $ref: '#/definitions/HostInfo'
+      mem:
+        $ref: '#/definitions/MemInfo'
+      netInterface:
+        items:
+          $ref: '#/definitions/NetInterfaceInfo'
+        type: array
+        x-go-name: NetInterface
+      wifi:
+        $ref: '#/definitions/WifiInfo'
+    type: object
+    x-go-package: xdt.com/hm-diag/diag/device
+  DiskInfo:
+    properties:
+      free:
+        format: uint64
+        type: integer
+        x-go-name: Free
+      fstype:
+        type: string
+        x-go-name: Fstype
+      path:
+        type: string
+        x-go-name: Path
+      total:
+        format: uint64
+        type: integer
+        x-go-name: Total
+      used:
+        format: uint64
+        type: integer
+        x-go-name: Used
+      usedPercent:
+        format: double
+        type: number
+        x-go-name: UsedPercent
+    type: object
+    x-go-package: xdt.com/hm-diag/diag/device
+  HostInfo:
+    properties:
+      bootTime:
+        format: uint64
+        type: integer
+        x-go-name: BootTime
+      hostname:
+        type: string
+        x-go-name: Hostname
+      uptime:
+        format: uint64
+        type: integer
+        x-go-name: Uptime
+    type: object
+    x-go-package: xdt.com/hm-diag/diag/device
+  InfoP2pStatus:
+    properties:
+      connected:
+        type: string
+        x-go-name: Connected
+      dialable:
+        type: string
+        x-go-name: Dialable
+      height:
+        format: uint64
+        type: integer
+        x-go-name: Height
+      natType:
+        type: string
+        x-go-name: NatType
+    type: object
+    x-go-package: xdt.com/hm-diag/diag/miner
+  InfoSummary:
+    properties:
+      firmwareVersion:
+        type: string
+        x-go-name: FirmwareVersion
+      height:
+        type: string
+        x-go-name: Height
+      name:
+        type: string
+        x-go-name: Name
+      version:
+        type: string
+        x-go-name: Version
+    type: object
+    x-go-package: xdt.com/hm-diag/diag/miner
+  MemInfo:
+    properties:
+      available:
+        format: uint64
+        type: integer
+        x-go-name: Available
+      buffers:
+        format: uint64
+        type: integer
+        x-go-name: Buffers
+      cached:
+        format: uint64
+        type: integer
+        x-go-name: Cached
+      free:
+        format: uint64
+        type: integer
+        x-go-name: Free
+      shared:
+        format: uint64
+        type: integer
+        x-go-name: Shared
+      total:
+        format: uint64
+        type: integer
+        x-go-name: Total
+      used:
+        format: uint64
+        type: integer
+        x-go-name: Used
+    type: object
+    x-go-package: xdt.com/hm-diag/diag/device
+  MinerInfo:
+    properties:
+      infoHeight:
+        format: uint64
+        type: integer
+        x-go-name: InfoHeight
+      infoP2pStatus:
+        $ref: '#/definitions/InfoP2pStatus'
+      infoRegion:
+        type: string
+        x-go-name: InfoRegion
+      infoSummary:
+        $ref: '#/definitions/InfoSummary'
+      peerAddr:
+        type: string
+        x-go-name: PeerAddr
+      peerBook:
+        $ref: '#/definitions/PeerBook'
+    type: object
+    x-go-package: xdt.com/hm-diag/diag/miner
+  NetInterfaceInfo:
+    properties:
+      addrs:
+        items:
+          properties:
+            addr:
+              type: string
+              x-go-name: Addr
+          type: object
+        type: array
+        x-go-name: Addrs
+      hardwareAddr:
+        type: string
+        x-go-name: HardwareAddr
+      index:
+        format: uint64
+        type: integer
+        x-go-name: Index
+      mtu:
+        format: uint64
+        type: integer
+        x-go-name: Mtu
+      name:
+        type: string
+        x-go-name: Name
+    type: object
+    x-go-package: xdt.com/hm-diag/diag/device
+  PeerBook:
+    properties:
+      address:
+        type: string
+        x-go-name: Address
+      connectionCount:
+        format: uint64
+        type: integer
+        x-go-name: ConnectionCount
+      lastUpdated:
+        format: uint64
+        type: integer
+        x-go-name: LastUpdated
+      listenAddrCount:
+        format: uint64
+        type: integer
+        x-go-name: ListenAddrCount
+      listenAddresses:
+        items:
+          type: string
+        type: array
+        x-go-name: ListenAddresses
+      name:
+        type: string
+        x-go-name: Name
+      nat:
+        type: string
+        x-go-name: Nat
+      sessions:
+        properties:
+          local:
+            type: string
+            x-go-name: Local
+          name:
+            type: string
+            x-go-name: Name
+          p2p:
+            type: string
+            x-go-name: P2p
+          remote:
+            type: string
+            x-go-name: Remote
+        type: object
+        x-go-name: Sessions
+    type: object
+    x-go-package: xdt.com/hm-diag/diag/miner
+  ProxyItem:
+    properties:
+      type:
+        $ref: '#/definitions/ProxyType'
+      value:
+        type: string
+        x-go-name: Value
+    type: object
+    x-go-package: xdt.com/hm-diag/ctrl
+  ProxyType:
+    type: string
+    x-go-package: xdt.com/hm-diag/ctrl
+  SnapshotStateRes:
+    properties:
+      file:
+        type: string
+        x-go-name: File
+      state:
+        type: string
+        x-go-name: State
+      time:
+        format: date-time
+        type: string
+        x-go-name: Time
+    type: object
+    x-go-package: xdt.com/hm-diag/ctrl
+  WifiInfo:
+    properties:
+      connected:
+        type: boolean
+        x-go-name: Connected
+      name:
+        type: string
+        x-go-name: Name
+      powered:
+        type: boolean
+        x-go-name: Powered
+    type: object
+    x-go-package: xdt.com/hm-diag/diag/device
+info:
+  description: "API is for： \n- retrieving information about hotspots \n- genernal
+    operation and maintenance\n\nUnified return data structure:\n```\n{\n  \"code\":
+    0, \n  \"data\": {}  \n  \"message\": “OK”\n}\n```\nUnless otherwise specified,
+    the `code` value is the same as the http status."
+  title: Hm-diag API
+  version: 1.0.0
+paths:
+  /api/v1/config/proxy:
+    get:
+      description: |-
+        Proxy config is about git repository or git release files
+        `item` query parameter shoulbe: "gitRelease" or "gitRepo"
+      operationId: config-proxy-get
+      parameters:
+      - in: query
+        name: item
+        required: true
+        type: string
+        x-go-name: Item
+      responses:
+        "200":
+          $ref: '#/responses/ProxyItem'
+      summary: Get proxy config
+      tags:
+      - public
+    post:
+      description: |-
+        roxy config is about git repository or git release files
+        `item` query parameter shoulbe: "gitRelease" or "gitRepo"
+      operationId: config-proxy-update
+      parameters:
+      - in: query
+        name: item
+        required: true
+        type: string
+        x-go-name: Item
+      - in: body
+        name: data
+        schema:
+          $ref: '#/definitions/ProxyItem'
+        x-go-name: Data
+      responses:
+        "200":
+          $ref: '#/responses/EmptyBody'
+      summary: Set proxy config
+      tags:
+      - public
+  /api/v1/device/reboot:
+    post:
+      description: API will return immediately, you can check
+      operationId: device-reboot
+      responses:
+        "200":
+          $ref: '#/responses/EmptyBody'
+      summary: Reboot Device
+      tags:
+      - public
+  /api/v1/device/state:
+    get:
+      description: this will show device state
+      operationId: device-state
+      parameters:
+      - default: false
+        in: query
+        name: cache
+        type: boolean
+        x-go-name: Cache
+      responses:
+        "200":
+          $ref: '#/responses/DeviceInfo'
+      summary: Get device info
+      tags:
+      - public
+  /api/v1/lan/hotspot:
+    get:
+      description: Device discovery by net interface `eth0`
+      operationId: lan-hotspots
+      responses:
+        "200":
+          $ref: '#/responses/DevDis'
+      summary: Get devices(hotspots) address in LAN
+      tags:
+      - public
+  /api/v1/miner/restart:
+    post:
+      description: Restart miner container
+      operationId: miner-restart
+      responses:
+        "200":
+          $ref: '#/responses/EmptyBody'
+      summary: Restart miner
+      tags:
+      - public
+  /api/v1/miner/resync:
+    post:
+      description: Clean miner data and restart miner, miner will resync data
+      operationId: miner-resync
+      responses:
+        "200":
+          $ref: '#/responses/EmptyBody'
+      summary: Resync miner
+      tags:
+      - public
+  /api/v1/miner/state:
+    get:
+      description: Get miner info and state
+      operationId: miner-state
+      parameters:
+      - default: false
+        in: query
+        name: cache
+        type: boolean
+        x-go-name: Cache
+      responses:
+        "200":
+          $ref: '#/responses/MinerInfo'
+      summary: Get miner info
+      tags:
+      - public
+  /api/v1/workspace/update:
+    get:
+      description: Whether worksapce (main git repo) is update available
+      operationId: workspace-update-get
+      responses:
+        "200":
+          $ref: '#/responses/BoolBody'
+      summary: Check workspace update
+      tags:
+      - public
+    post:
+      description: Trigger workspace update and return immediately
+      operationId: workspace-update
+      responses:
+        "200":
+          $ref: '#/responses/EmptyBody'
+      summary: Update worksapce (main git repo)
+      tags:
+      - public
+produces:
+- application/json
+responses:
+  AllState:
+    description: ""
+    schema:
+      properties:
+        code:
+          format: int64
+          type: integer
+          x-go-name: Code
+        data:
+          $ref: '#/definitions/AllStateInfo'
+        message:
+          type: string
+          x-go-name: Message
+      type: object
+  BoolBody:
+    description: ""
+    schema:
+      properties:
+        code:
+          format: int64
+          type: integer
+          x-go-name: Code
+        data:
+          type: boolean
+          x-go-name: Data
+        message:
+          type: string
+          x-go-name: Message
+      type: object
+  DevDis:
+    description: ""
+    schema:
+      properties:
+        code:
+          format: int64
+          type: integer
+          x-go-name: Code
+        data:
+          $ref: '#/definitions/Dev'
+        message:
+          type: string
+          x-go-name: Message
+      type: object
+  DeviceInfo:
+    description: ""
+    schema:
+      properties:
+        code:
+          format: int64
+          type: integer
+          x-go-name: Code
+        data:
+          $ref: '#/definitions/DeviceInfo'
+        message:
+          type: string
+          x-go-name: Message
+      type: object
+  EmptyBody:
+    description: ""
+    schema:
+      properties:
+        code:
+          format: int64
+          type: integer
+          x-go-name: Code
+        data:
+          type: object
+          x-go-name: Data
+        message:
+          type: string
+          x-go-name: Message
+      type: object
+  MinerInfo:
+    description: ""
+    schema:
+      properties:
+        code:
+          format: int64
+          type: integer
+          x-go-name: Code
+        data:
+          $ref: '#/definitions/MinerInfo'
+        message:
+          type: string
+          x-go-name: Message
+      type: object
+  ProxyItem:
+    description: ""
+    schema:
+      properties:
+        code:
+          format: int64
+          type: integer
+          x-go-name: Code
+        data:
+          $ref: '#/definitions/ProxyItem'
+        message:
+          type: string
+          x-go-name: Message
+      type: object
+  SnapshotStateRes:
+    description: ""
+    schema:
+      properties:
+        code:
+          format: int64
+          type: integer
+          x-go-name: Code
+        data:
+          $ref: '#/definitions/SnapshotStateRes'
+        message:
+          type: string
+          x-go-name: Message
+      type: object
+  StringBody:
+    description: ""
+    schema:
+      properties:
+        code:
+          format: int64
+          type: integer
+          x-go-name: Code
+        data:
+          type: string
+          x-go-name: Data
+        message:
+          type: string
+          x-go-name: Message
+      type: object
+schemes:
+- http
+swagger: "2.0"

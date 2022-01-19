@@ -18,6 +18,45 @@ type PeerBookParams struct {
 	Addr string `json:"addr"`
 }
 
+type PeerBook struct {
+	Address         string   `json:"address"`
+	ConnectionCount uint     `json:"connectionCount"`
+	LastUpdated     uint     `json:"lastUpdated"`
+	ListenAddrCount uint     `json:"listenAddrCount"`
+	ListenAddresses []string `json:"listenAddresses"`
+	Name            string   `json:"name"`
+	Nat             string   `json:"nat"`
+	Sessions        struct {
+		Local  string `json:"local"`
+		Name   string `json:"name"`
+		P2p    string `json:"p2p"`
+		Remote string `json:"remote"`
+	} `json:"sessions"`
+}
+
+type InfoSummary struct {
+	FirmwareVersion string `json:"firmwareVersion"`
+	Height          string `json:"height"`
+	Name            string `json:"name"`
+	Version         string `json:"version"`
+}
+
+type InfoP2pStatus struct {
+	Connected string `json:"connected"`
+	Dialable  string `json:"dialable"`
+	Height    uint64 `json:"height"`
+	NatType   string `json:"natType"`
+}
+
+type MinerInfo struct {
+	InfoHeight    uint64        `json:"infoHeight"`
+	InfoP2pStatus InfoP2pStatus `json:"infoP2pStatus"`
+	InfoRegion    string        `json:"infoRegion"`
+	InfoSummary   InfoSummary   `json:"infoSummary"`
+	PeerAddr      string        `json:"peerAddr"`
+	PeerBook      PeerBook      `json:"peerBook"`
+}
+
 func FetchData(url string) map[string]interface{} {
 	client := &jsonrpc.Client{Url: url}
 	resMap := make(map[string]interface{})

@@ -27,6 +27,11 @@ type TaskData struct {
 	Data      map[string]interface{} `json:"data"`
 }
 
+type AllStateInfo struct {
+	Device device.DeviceInfo `json:"device"`
+	Miner  miner.MinerInfo   `json:"miner"`
+}
+
 var taskSingleton *Task
 
 func InitTask(conf config.GlobalConfig) {

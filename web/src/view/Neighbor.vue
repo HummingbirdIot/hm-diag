@@ -53,6 +53,9 @@
     </Cell>
   </CellGroup>
   <div class="van-safe-area-bottom"></div>
+  <br />
+  <br />
+  <br />
 </template>
 
 <script setup>
@@ -109,6 +112,7 @@ function fetchHotspotsInfo() {
       console.error('no address or port', n)
       continue
     }
+	  // TODO change this route to /state after next version
     const api = `http://${n.address}:${n.port}/state?cache=true`
     const ctrl = new AbortController()
     const timeoutId = setTimeout(() => ctrl.abort(), 5000)

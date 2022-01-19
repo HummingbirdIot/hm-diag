@@ -1,0 +1,26 @@
+swagger: "2.0"
+schemes:
+- http
+
+info:
+  description: |-
+    API is for： 
+    - retrieving information about hotspots 
+    - genernal operation and maintenance
+
+    Unified return data structure:
+    ```
+    {
+      "code": 0, 
+      "data": {}  
+      "message": “OK”
+    }
+    ```
+    Unless otherwise specified, the `code` value is the same as the http status.
+  title: Hm-diag API
+  version: 1.0.0
+
+consumes:
+- application/json
+produces:
+- application/json
