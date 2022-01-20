@@ -22,7 +22,7 @@ function genInnerSpec() {
   -i ./api/swagger_ui/api-base-inner.yml \
   -o api/swagger_ui/api-inner.yml
 
-  swagger generate markdown -f ./api/swagger_ui/api-inner.yml --output=api.md
+  swagger generate markdown -f ./api/swagger_ui/api.yml --output=api.md
 
   echo "Generated inner spec"
 }
