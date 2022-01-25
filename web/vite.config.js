@@ -23,11 +23,11 @@ export default {
     host: '0.0.0.0',
     proxy: {
       '/api/': {
-        target: 'http://localhost:8090',
+        target: 'http://192.168.89.45:8090',
         changeOrigin: true
       },
       '/inner/': {
-        target: 'http://localhost:8090',
+        target: 'http://192.168.89.45:8090',
         changeOrigin: true
       },
     }

@@ -24,7 +24,8 @@
         <Tag type="primary" plain round @click="filterTxt = 'JSON up'" class="tag-tip">Up link</Tag>&nbsp;
         <Tag type="primary" plain round @click="filterTxt = 'JSON down'" class="tag-tip">Down link</Tag>
       </template>
-      <Field v-model="filterTxt" placeholder="input filter text or select filter on the left" />
+      <Field v-model="filterTxt"
+        placeholder="input filter text or select filter on the left" />
     </Cell>
     <Cell title>
       <Button type="primary" size="small" plain @click="fullScreen">Full Screen Log</Button>&nbsp;
@@ -45,7 +46,7 @@
 
 <script setup>
 import { ref, reactive } from "vue"
-import { CellGroup, Cell, Button, Field, Dialog, Divider, Tag, Toast } from "vant"
+import { CellGroup, Cell, Button, Field, Dialog, Divider, Tag, Toast, RadioGroup, Radio } from "vant"
 
 const timeArr = reactive([
   { label: '10 Minute', value: 10, sel: true },
@@ -133,6 +134,12 @@ function fullScreen() {
   background-color: var(--van-tag-primary-color) !important;
   color: #fff !important;
 }
+
+.van-field {
+  border: 1px solid #efefef;
+  border-radius: 100px;
+}
+
 .log {
   padding: 0px 10px;
   background-color: #454545;

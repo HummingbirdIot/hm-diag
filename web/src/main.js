@@ -19,7 +19,7 @@ import DeviceStateInfo from "./view/DeviceStateInfo.vue";
 import MinerStateInfo from "./view/MinerStateInfo.vue";
 import Setting from "./view/Setting.vue";
 import Control from "./view/Control.vue";
-import MinerLog from "./view/MinerLog.vue";
+import LogQuery from "./view/LogQuery.vue";
 import Neighbor from "./view/Neighbor.vue";
 import "./style/common.less";
 import "./style/index.less";
@@ -27,7 +27,7 @@ import { initDateFormat } from "./util/time";
 
 const routes = [
   { path: "/", component: Home },
-  { path: "/minerLog", component: MinerLog },
+  { path: "/logQuery", component: LogQuery },
   { path: "/setting", component: Setting },
   { path: "/control", component: Control },
   { path: "/neighbor", component: Neighbor},
