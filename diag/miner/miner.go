@@ -1,18 +1,12 @@
 package miner
 
 import (
-	"fmt"
-	"log"
 	"os/exec"
 	"strings"
-	"time"
 
-	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag/jsonrpc"
 	"xdt.com/hm-diag/util"
 )
-
-const getMinerLogCmd = config.MAIN_SCRIPT + " minerLog "
 
 type PeerBookParams struct {
 	Addr string `json:"addr"`
@@ -115,20 +109,4 @@ func Version() (string, error) {
 		return "", err
 	}
 	return strings.ReplaceAll(string(out), "\n", ""), nil
-}
-
-func MinerLog(since, until time.Time, filterTxt string) (string, error) {
-	cmdStr := fmt.Sprintf("%s %s %s %s",
-		getMinerLogCmd,
-		since.Format("'2006-01-02 15:04:05'"),
-		until.Format("'2006-01-02 15:04:05'"),
-		"'"+filterTxt+"'")
-	log.Println("exec cmd:", cmdStr)
-	cmd := exec.Command("bash", "-c", cmdStr)
-	cmd.Dir = config.Config().GitRepoDir
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
 }

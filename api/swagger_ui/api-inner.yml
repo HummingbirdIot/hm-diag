@@ -547,6 +547,11 @@ paths:
         name: filter
         type: string
         x-go-name: Filter
+      - format: uint64
+        in: query
+        name: limit
+        type: integer
+        x-go-name: Limit
       responses:
         "200":
           $ref: '#/responses/StringBody'

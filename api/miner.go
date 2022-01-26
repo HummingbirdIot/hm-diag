@@ -11,7 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"xdt.com/hm-diag/ctrl"
 	"xdt.com/hm-diag/diag"
-	"xdt.com/hm-diag/diag/miner"
 )
 
 func resyncMiner(c *gin.Context) {
@@ -106,28 +105,4 @@ func minerInfo(c *gin.Context) {
 		d = diag.TaskData{Data: diagTask.FetchMinerInfo(), FetchTime: time.Now()}
 	}
 	c.JSON(200, RespOK(d.Data))
-}
-
-func minerLogQuery(c *gin.Context) {
-	var since time.Time = time.Now().Add(time.Minute * time.Duration(5))
-	var until time.Time = time.Now()
-	if st, err := time.Parse("2006-01-02T15:04:05", c.Query("since")); err == nil {
-		since = st
-	} else {
-		log.Println("query miner log, convert since time error: ", err)
-	}
-	if tt, err := time.Parse("2006-01-02T15:04:05", c.Query("until")); err == nil {
-		until = tt
-	} else {
-		log.Println("query miner log, convert until time error: ", err)
-	}
-	filter := c.Query("filter")
-	log.Printf("query miner log, since: %s, until: %s, filter: %s", since, until, filter)
-	l, err := miner.MinerLog(since, until, filter)
-	if err == nil {
-		c.JSON(200, RespOK(l))
-	} else {
-		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
-		log.Println("query miner log error: ", err)
-	}
 }

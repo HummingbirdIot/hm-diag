@@ -105,6 +105,9 @@ type MinerLogParams struct {
 	Until time.Time `json:"until"`
 	// in: query
 	Filter string `json:"filter"`
+
+	// in: query
+	Limit uint `json:"limit"`
 }
 
 // swagger:parameters miner-snapshot-download

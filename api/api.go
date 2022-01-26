@@ -129,7 +129,7 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	// Query miner log
 	// Responses:
 	//   200:StringBody
-	r.GET("/inner/api/v1beta/miner/log", minerLogQuery)
+	r.GET("/inner/api/v1/log", logQuery)
 
 	// workspace
 	// swagger:route POST /inner/api/v1/workspace/reset inner workspace-reset

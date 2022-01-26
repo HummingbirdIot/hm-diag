@@ -1,16 +1,17 @@
 <template>
   <CellGroup>
-    <Cell title="Recent Time" class="time-sel">
-      <template v-for="item in timeArr">
-        <Tag
-          type="primary"
-          plain
-          round
-          :class="{ 'tag-sel': item.sel }"
-          class="tag-tip"
-          @click="selTime($event, item.value)"
-        >{{ item.label }}</Tag>&nbsp;
-      </template>
+    <Cell title="Log Type">
+      <RadioGroup v-model="logType" direction="horizontal">
+        <Radio name="pktfwdLog">Packet Forward</Radio>
+        <Radio name="minerLog">Miner</Radio>
+      </RadioGroup> 
+    </Cell>
+    <Cell title="Recent Time" v-if="logType=='pktfwdLog'">
+      <RadioGroup v-model="minutesAgo" direction="horizontal">
+        <Radio v-for="item in timeArr"
+          :name="item.value"
+        >{{ item.label }}</Radio>
+      </RadioGroup>
     </Cell>
     <!-- <Cell title="From Time">
       <input v-model="fromTime" type="datetime-local" />
@@ -20,14 +21,19 @@
     </Cell>-->
     <Cell title>
       <template #title>
-        Filter Log:&nbsp;
-        <Tag type="primary" plain round @click="filterTxt = 'JSON up'" class="tag-tip">Up link</Tag>&nbsp;
-        <Tag type="primary" plain round @click="filterTxt = 'JSON down'" class="tag-tip">Down link</Tag>
+        Filter Log&nbsp;
+        <template v-if="logType=='pktfwdLog'">
+          <Tag type="primary" plain round @click="filterTxt = 'JSON up'" class="tag-tip">Up link</Tag>&nbsp;
+          <Tag type="primary" plain round @click="filterTxt = 'JSON down'" class="tag-tip">Down link</Tag>
+        </template>
       </template>
       <Field v-model="filterTxt"
         placeholder="input filter text or select filter on the left" />
     </Cell>
-    <Cell title>
+    <Cell>
+      <template #title v-if="logType!='pktfwdLog'">
+        Show up to {{limitLine}} lines
+      </template>
       <Button type="primary" size="small" plain @click="fullScreen">Full Screen Log</Button>&nbsp;
       <Button type="primary" size="small" @click="query">Query</Button>
     </Cell>
@@ -42,6 +48,8 @@
       {{l.message}}
     </div>
   </pre>
+  <div class="van-safe-area-bottom"></div>
+  <br/>
 </template>
 
 <script setup>
@@ -62,24 +70,11 @@ const minutesAgo = ref(10)
 // const to = new Date().Format("yyyy-MM-ddTHH:mm:ss")
 // const fromTime = ref(from)
 // const toTime = ref(to)
+const logType = ref('pktfwdLog')
 const filterTxt = ref('')
 
-const log = ref('')
 const logs = reactive([])
-
-function selTime(event, value) {
-  console.log(event)
-  timeArr.forEach(t => {
-    if (t.value == value) {
-      console.log('set', t.sel, true)
-      t.sel = true
-    } else {
-      t.sel = false
-    }
-  })
-  minutesAgo.value = value
-  console.log(minutesAgo.value, timeArr)
-}
+const limitLine = ref(1000)
 
 function query() {
   const deltaMin = minutesAgo.value
@@ -92,7 +87,13 @@ function query() {
     loadingType: 'spinner',
     duration: 10 * 1000
   });
-  fetch(`/inner/api/v1beta/miner/log?since=${ft}&until=${tt}&filter=${filterTxt.value}`)
+  let url= `/inner/api/v1/log?type=${logType.value}&filter=${filterTxt.value}`
+  if(logType.value === 'pktfwdLog') {
+    url += `&since=${ft}&until=${tt}`
+  } else {
+    url += `&limit=${limitLine.value}`
+  }
+  fetch(url)
     .then(r => r.json())
     .then(r => {
       if (r.code == 200) {
@@ -102,7 +103,12 @@ function query() {
           try {
             if (l !== '') {
               const lj = JSON.parse(l)
-              lj.time = new Date(lj.time/1000).Format("MM-dd HH:mm:ss")
+              const t = Number(lj.time)
+              if (isNaN(t)) {
+                lj.time = lj.time.substr(5, 14)
+              } else {
+                lj.time = new Date(t/1000).Format("MM-dd HH:mm:ss")
+              }
               logs.push(lj)
             }
           } catch (e) {
@@ -143,7 +149,7 @@ function fullScreen() {
 .log {
   padding: 0px 10px;
   background-color: #454545;
-  height: calc(100vh - 230px);
+  height: calc(100vh - 270px);
   color: #fafafa;
   line-height: 20px;
   font-size: 14px;
