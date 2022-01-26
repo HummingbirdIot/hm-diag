@@ -31,8 +31,10 @@
         placeholder="input filter text or select filter on the left" />
     </Cell>
     <Cell>
-      <template #title v-if="logType!='pktfwdLog'">
-        Show up to {{limitLine}} lines
+      <template #title>
+        <span  v-if="logType!='pktfwdLog'">
+          Show up to {{limitLine}} lines
+        </span>
       </template>
       <Button type="primary" size="small" plain @click="fullScreen">Full Screen Log</Button>&nbsp;
       <Button type="primary" size="small" @click="query">Query</Button>
