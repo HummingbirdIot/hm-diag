@@ -121,7 +121,7 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	// Upload snapshot file and apply it
 	// Responses:
 	//   200:EmptyBody
-	r.POST("/inner/inner/api/v1/miner/snapshot/apply", snapshotApply)
+	r.POST("/inner/api/v1/miner/snapshot/apply", snapshotApply)
 
 	// swagger:route GET /inner/api/v1beta/miner/log inner miner-log
 	// Query miner log
