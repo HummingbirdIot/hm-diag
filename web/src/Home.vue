@@ -94,7 +94,8 @@ import {
   Dialog,
   Icon,
 } from 'vant';
-import * as hapi from './api/helium'
+import * as api from './api'
+import * as errors from './util/errors'
 
 const data = reactive({})
 const heliumAddr = ref('')
@@ -115,16 +116,15 @@ function fetchData() {
     loadingType: 'spinner',
     duration: 10 * 1000
   });
-  fetch('/inner/state')
-    .then(r => r.json())
+  api.stateGet()
     .then(r => {
       Toast.clear()
-      Object.assign(data, r.data)
+      Object.assign(data, r)
       fillData(data)
     })
-    .catch(r => {
-      console.error(r.message)
-      Dialog.alert({ message: "error :" + r })
+    .catch(err => {
+      console.error(err)
+      Dialog.alert({ message: "get state error:" + errors.getMsg(err) })
     })
 }
 
@@ -142,7 +142,7 @@ function fillData(data) {
 }
 
 function fetchHeliumHeight() {
-  hapi.fetchHeliumHeight()
+  api.fetchHeliumHeight()
     .then(r => {
       heliumHeight.value = r
     }).catch(err => {

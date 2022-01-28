@@ -28,37 +28,25 @@
 </template>
 
 <script setup>
-import { ref } from "vue"
+import { ref } from 'vue'
 import { CellGroup, Cell, Field, Button, Dialog, Toast } from 'vant'
+import * as api from '../api'
+import * as errors from '../util/errors'
 
-// item: gitRepo or gitRelease
-function fetchGitProxy(item) {
-  return new Promise((resolve, reject) => {
-    fetch("/api/v1/config/proxy?item=" + item)
-      .then(r => r.json())
-      .then(resolve)
-  })
-}
 
 const rp = ref("")
 const rrp = ref("")
 
-fetchGitProxy("gitRepo").then(rpRe => {
-  if (rpRe == null || rpRe.code !== 200) {
-    Dialog.alert({ message: "load git repository proxy error" })
-  } else {
-    rp.value = rpRe.data?.value ? rpRe.data.value : ""
+api.proxyConfigGet("gitRepo")
+  .then(rpRe => {
+    rp.value = rpRe?.value ? rpRe.value : ""
     console.log(rp.value)
-  }
-})
-fetchGitProxy("gitRelease").then(rrpRe => {
-  if (rrpRe == null || rrpRe.code !== 200) {
-    Dialog.alert({ message: "load git release file proxy error" })
-  } else {
-    rrp.value = rrpRe.data?.value ? rrpRe.data.value : ""
+  })
+api.proxyConfigGet("gitRelease")
+  .then(rrpRe => {
+    rrp.value = rrpRe?.value ? rrpRe.value : ""
     console.log(rrp.value)
-  }
-})
+  })
 
 function confirm(item) {
   const v = item == 'gitRepo' ? rp.value : rrp.value
@@ -67,17 +55,12 @@ function confirm(item) {
     u = getUrl(v)
   }
   const type = item == 'gitRepo' ? 'mirror' : 'urlPrefix';
-  fetch(`/api/v1/config/proxy?item=${item}`, {
-    method: 'POST',
-    body: JSON.stringify({ type, value: u })
-  })
-    .then(r => r.json())
+  api.proxyConfigSet(item, {type, value: u})
     .then(r => {
-      if (r && r.code == 200) {
         Toast.success("set success")
-      } else {
-        Dialog.alert({ message: "set error :" + r?.message })
-      }
+    })
+    .catch(err => {
+        Dialog.alert({ message: "set error :" + errors.getMsg(err)})
     })
 }
 

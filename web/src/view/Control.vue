@@ -61,6 +61,7 @@ import { reactive, ref } from "vue"
 import { CellGroup, Cell, Button, Toast, Dialog, Progress, Notify, Tag } from 'vant'
 import * as axios from "axios"
 import * as api from "../api/backend"
+import * as errors from "../util/errors"
 
 const toUpdateWorkspace = ref(null)
 const file = ref(null)
@@ -69,17 +70,12 @@ const progress = ref(0)
 const snapState = reactive({ state: "unknown", file: "", time: "not generated" })
 
 function reboot() {
-  fetch('/api/v1/device/reboot', { method: 'POST' })
-    .then(r => r.json())
+  api.deviceReboot()
     .then(r => {
-      if (r && r.code == 200) {
-        Toast.success("success")
-      } else {
-        Dialog.alert({ message: "error:" + r.message })
-      }
+      Toast.success("success")
     })
-    .catch(r => {
-      Dialog.alert({ message: "error:" + r })
+    .catch(err => {
+      Dialog.alert({ message: "error:" + errors.getMsg(err) })
     })
 }
 
@@ -90,18 +86,13 @@ function resync() {
     loadingType: 'spinner',
     duration: 0
   });
-  fetch('/api/v1/miner/resync', { method: 'POST' })
-    .then(r => r.json())
+  api.minerResync() 
     .then(r => {
       Toast.clear()
-      if (r && r.code == 200) {
-        Toast.success("success")
-      } else {
-        Dialog.alert({ message: "error:" + r.message })
-      }
+      Toast.success("success")
     })
-    .catch(r => {
-      Dialog.alert({ message: "error:" + r })
+    .catch(err => {
+      Dialog.alert({ message: "error:" + errors.getMsg(err) })
     })
 }
 
@@ -113,59 +104,46 @@ function restartMiner() {
     loadingType: 'spinner',
     duration: 0
   });
-  fetch('/api/v1/miner/restart', { method: 'POST' })
-    .then(r => r.json())
-    .then(r => {
+  api.minerRestart() 
+    .then(() => {
       Toast.clear()
-      if (r && r.code == 200) {
-        Toast.success("success")
-      } else {
-        Dialog.alert({ message: "error:" + r.message })
-      }
+      Toast.success("success")
     })
-    .catch(r => {
-      Dialog.alert({ message: "error:" + r })
+    .catch(err => {
+      Dialog.alert({ message: "error:" + errors.getMsg(err) })
     })
 }
 
 function snapshot() {
-  fetch("/inner/api/v1/miner/snapshot", {
-    method: "POST"
-  }).then(r => r.json())
+  api.snap()
     .then(r => {
-      console.log("snapshot res:", r)
       Dialog.alert({ message: "request success, refresh to check result after severial minuts" })
     })
     .catch(e => {
       console.error("snapshot error", e)
-      Dialog.alert({ message: "snapshot error, try after several minutes" })
+      Dialog.alert({ message: "snapshot error, try after several minutes:\n" + errors.getMsg(e) })
     })
 }
 
 
 function snapshotState() {
-  fetch("/inner/api/v1/miner/snapshot/state")
-    .then(r => r.json())
-    .then(r => {
-      console.log("snapshot state:", r)
-      if (r.code == 200) {
-        if (r.data?.file && r.data?.state == 'done') {
-          snapState.file = r.data.file
-          snapState.time = r.data.time
-          snapState.state = r.data.state
-        }
-      } else {
-        Dialog.alert({ message: "load snapshot state error, please retry after a while" })
-      }
-    })
-    .catch(e => {
-      console.error("get snapshot state error", e)
-      Dialog.alert({ message: "error, please retry after a while" })
-    })
+  api.snapState()
+  .then(r => {
+    console.log("snapshot state:", r)
+    if (r.file && r.state == 'done') {
+      snapState.file = r.file
+      snapState.time = r.time
+      snapState.state = r.state
+    }
+  })
+  .catch(e => {
+    console.error("get snapshot state error", e)
+    Dialog.alert({ message: "error, please retry after a while" })
+  })
 }
 
 function download() {
-  open(`/inner/api/v1/miner/snapshot/file/${snapState.file}`, "_blank")
+  api.snapDownload(snapState.file)
 }
 
 function handleFileChange() {
@@ -219,14 +197,13 @@ function resetWorkspace() {
   })
 }
 
-async function checkWorkspaceUpdate() {
-  api.checkWorkspaceUpdate()
+async function workspaceUpdateCheck() {
+  api.workspaceUpdateCheck()
     .then((r) => {
       toUpdateWorkspace.value = r
     })
     .catch(err => {
-      const msg = err.response?.data?.message ? err.response.data.message : err.message
-      Notify("failed to check workspace update:" + msg)
+      Notify("failed to check workspace update:" + errors.getMsg(err))
     })
 }
 
@@ -236,39 +213,21 @@ function updateWorkspace() {
       Dialog.alert({ message: "Request success. check after several minutes" });
     })
     .catch(err => {
-      console.log('========', err.response?.data?.message)
-      const msg = err.response?.data?.message ? err.response.data.message : err.message
-      Dialog.alert({ type: "warning", message: msg })
+      console.error('error:', err)
+      Dialog.alert({ type: "warning", message: errors.getMsg(err) })
     })
 }
 
 function doResetWorkspace() {
-  fetch("/inner/api/v1/workspace/reset", {
-    method: "POST"
-  }).then(r => r.json())
-    .then(r => {
-      if (r.status != 200) {
-        console.log(r.status, r.data)
-        Dialog.alert({ message: "error, http status " + r.status + "\n" + r.data?.message })
-      } else {
-        if (r.data.code != 200) {
-          Dialog.alert({ message: "error " + r.data.message })
-        } else {
-          Dialog.alert({ message: "request success, check result after severial minuts" })
-        }
-      }
-
-      console.log("workspace reset res:", r)
-      Dialog.alert({ message: "success" })
-    })
-    .catch(e => {
-      console.error("workspace reset error", e)
-      Dialog.alert({ message: "snapshot error, try after several minutes" })
+  api.workspaceReset()
+    .catch(err => {
+      console.error("workspace reset error", err)
+      Dialog.alert({ message: "snapshot error, try after several minutes : " + errors.getMsg(err) })
     })
 }
 
 snapshotState()
-checkWorkspaceUpdate()
+workspaceUpdateCheck()
 
 </script>
 

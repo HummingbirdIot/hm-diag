@@ -59,10 +59,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from "vue"
+import { ref, reactive, onMounted, watch } from 'vue'
 import { CellGroup, Cell, Search, Dialog, Toast, Tag, Icon, Notify } from 'vant'
-
-import { fetchHeliumHeight } from '../api/helium'
+import * as api from '../api'
+import * as errors from '../util/errors'
 
 let searchTxt = ref('')
 let neighbors = ref([])
@@ -86,17 +86,16 @@ function loadLanHotspots() {
     loadingType: 'spinner',
     duration: 10 * 1000
   });
-  fetch(`/api/v1/lan/hotspot`)
-    .then(r => r.json())
+  api.lanHotspots()
     .then(r => {
-      if (r && r.code == 200) {
-        neighbors.value = r.data
-        filteredNeighbors.value = neighbors.value
-        fetchHotspotsInfo()
-      } else {
-        Dialog.alert({ message: "get hotspots list error :" + r?.message })
-      }
-    }).finally(() => {
+      neighbors.value = r
+      filteredNeighbors.value = neighbors.value
+      fetchHotspotsInfo()
+    })
+    .catch(err => {
+      Dialog.alert({ message: "get hotspots list error :" + errors.getMsg(err) })
+    })
+    .finally(() => {
       Toast.clear()
     })
 }
@@ -159,7 +158,7 @@ watch(searchTxt, v => {
 })
 
 onMounted(async () => {
-  fetchHeliumHeight().then(h => {
+  api.fetchHeliumHeight().then(h => {
     heliumHeight.value = h
   }).catch(err => {
     Dialog.alert({ message: "Failed to load helium block height" });

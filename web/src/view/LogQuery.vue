@@ -57,6 +57,7 @@
 <script setup>
 import { ref, reactive } from "vue"
 import { CellGroup, Cell, Button, Field, Dialog, Divider, Tag, Toast, RadioGroup, Radio } from "vant"
+import * as api from "../api"
 
 const timeArr = reactive([
   { label: '10 Minute', value: 10, sel: true },
@@ -89,36 +90,33 @@ function query() {
     loadingType: 'spinner',
     duration: 10 * 1000
   });
-  let url= `/inner/api/v1/log?type=${logType.value}&filter=${filterTxt.value}`
-  if(logType.value === 'pktfwdLog') {
-    url += `&since=${ft}&until=${tt}`
-  } else {
-    url += `&limit=${limitLine.value}`
+
+  const params = {
+    logType: logType.value,
+    filter: filterTxt.value,
+    fromTime: ft,
+    toTime: tt,
+    limitLine: limitLine.value
   }
-  fetch(url)
-    .then(r => r.json())
+  api.logQuery(params)
     .then(r => {
-      if (r.code == 200) {
-        const arr = r.data.split('\n')
-        logs.splice(0, logs.length)
-        for (const l of arr) {
-          try {
-            if (l !== '') {
-              const lj = JSON.parse(l)
-              const t = Number(lj.time)
-              if (isNaN(t)) {
-                lj.time = lj.time.substr(5, 14)
-              } else {
-                lj.time = new Date(t/1000).Format("MM-dd HH:mm:ss")
-              }
-              logs.push(lj)
+      const arr = r.split('\n')
+      logs.splice(0, logs.length)
+      for (const l of arr) {
+        try {
+          if (l !== '') {
+            const lj = JSON.parse(l)
+            const t = Number(lj.time)
+            if (isNaN(t)) {
+              lj.time = lj.time.substr(5, 14)
+            } else {
+              lj.time = new Date(t/1000).Format("MM-dd HH:mm:ss")
             }
-          } catch (e) {
-            console.error('parse log error: ', e)
+            logs.push(lj)
           }
+        } catch (e) {
+          console.error('parse log error: ', e)
         }
-      } else {
-        Dialog.alert({ message: "query log error:" + r.message })
       }
     }).catch(err => {
       Dialog.alert({ message: "query log error:" + err })
