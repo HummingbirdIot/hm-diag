@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	expect "github.com/ThomasRooney/gexpect"
 	"github.com/pkg/errors"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/util"
@@ -165,23 +164,35 @@ func parseSnapshotStateResult(s string) (SnapshotStateRes, error) {
 
 func SnapshotLoad(file string) {
 	fn := func() error {
-		cmd := "bash " + snapshotLoadCmd + " " + file
-		log.Println("spawn cmd:", cmd)
-		child, err := expect.Spawn(cmd)
+		log.Println("exec cmd: bash " + snapshotLoadCmd + " " + file)
+		cmd := exec.Command("bash", snapshotLoadCmd, file)
+		cmd.Dir = config.Config().GitRepoDir
+		p, err := cmd.StdoutPipe()
 		if err != nil {
-			return err
+			return errors.WithStack(errors.WithMessage(err, "start snapshot load cmd pipe error"))
+		}
+		r := bufio.NewReader(p)
+
+		err = cmd.Start()
+		if err != nil {
+			return errors.WithStack(errors.WithMessage(err, "start snapshot load cmd error"))
 		}
 		for err == nil {
-			ln, err := child.ReadLine()
-			if err != nil {
-				return errors.WithMessage(err, "load snapshort error when read output")
+			ln, _, errIn := r.ReadLine()
+			err = errIn
+			if err == nil {
+				s := string(ln)
+				log.Println("snapshot load cmd output:", s)
+			} else if err == io.EOF {
+				break
+			} else {
+				log.Println("read snapshot load cmd ouput error:", err.Error())
 			}
-			log.Println("load snapshot output:", ln)
 		}
-		err = child.Wait()
+
+		err = cmd.Wait()
 		if err != nil {
-			err = errors.WithMessage(err, "load snapthot exit error")
-			return err
+			return errors.WithStack(errors.WithMessage(err, "snapshot load exit error"))
 		}
 		return nil
 	}
