@@ -7,6 +7,13 @@
     <Cell title="Reboot Device">
       <Button size="small" type="danger" plain @click="reboot">Reboot</Button>
     </Cell>
+    <Cell title="Blink Light ">
+      <Button size="small" type="primary" plain @click="blinkLight(30)">30 seconds</Button>
+      &nbsp;
+      <Button size="small" type="primary" plain @click="blinkLight(60)">60 seconds</Button>
+    </Cell>
+  </CellGroup>
+  <CellGroup title="Miner">
     <Cell title="Resync Miner">
       <Button size="small" type="primary" plain @click="resync">Resync</Button>
     </Cell>
@@ -77,6 +84,9 @@ function reboot() {
     .catch(err => {
       Dialog.alert({ message: "error:" + errors.getMsg(err) })
     })
+}
+function blinkLight(durSec) {
+  api.blinkDeviceLight(durSec)
 }
 
 function resync() {

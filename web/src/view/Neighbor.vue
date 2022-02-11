@@ -35,9 +35,12 @@
       <template #title>
         <div class="pot-name">{{ n.showName ? n.showName : n.address }}</div>
         <template v-if="n.dataReady">
-          <div class="pot-ip">IP: {{ n.address }}</div>
-          <div class="pot-ip">Block Height: {{ n.height }} / {{ heliumHeight }}</div>
-          <div class="pot-ip">Miner Version: {{ n.version }}</div>
+          <div class="pot-info">IP: <span class="pot-value">{{ n.address }}</span></div>
+          <div class="pot-info">Block Height: <span class="pot-value">{{ n.height }} / {{ heliumHeight }}</span></div>
+          <div class="pot-info">Miner Version: <span class="pot-value">{{ n.version }}</span></div>
+          <div class="pot-info">Listen Address:
+            <span class="pot-value">{{n.listenAddress}}</span>
+          </div>
         </template>
       </template>
       <template #value>
@@ -119,14 +122,16 @@ function fetchHotspotsInfo() {
       .then(r => r.json())
       .then(r => {
         if (r.code == 200) {
-          console.log('go spot info', r.data)
+          console.log('go hotspot info', r.data)
           const s = r.data.miner.infoSummary
           const p2p = r.data.miner.infoP2pStatus
+          const pb = r.data.miner.peerBook
           n.showName = s.name
           n.isRelay = p2p.natType == 'symmetric' ? true : false
           n.height = s.height
           n.version = s.version
           n.dataReady = true
+          n.listenAddress = pb.length > 0 ? pb[0].listenAddresses.length > 0 ? pb[0].listenAddresses[0] : '' : ''
         } else {
           n.dataReady = false
           n.showName = n.address
@@ -195,10 +200,13 @@ onMounted(async () => {
   font-size: 16px;
   font-weight: 500;
 }
-.pot-ip {
+.pot-info {
   color: #666;
   font-size: 12px;
   margin-right: -90%;
+  .pot-value {
+    font-weight: 500;
+  }
 }
 </style>
 

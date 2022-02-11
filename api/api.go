@@ -57,6 +57,13 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	//   200:EmptyBody
 	r.POST("/api/v1/device/reboot", rebootDevice)
 
+	// swagger:route POST /api/v1/device/light/blink inner device-light
+	// Set Device light color
+	//
+	// Responses:
+	//   200:EmptyBody
+	r.POST("/inner/api/v1/device/light/blink", deviceLightBlink)
+
 	// swagger:route GET /api/v1/lan/hotspot public lan-hotspots
 	// Get devices(hotspots) address in LAN
 	//

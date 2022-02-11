@@ -18,7 +18,33 @@ func rebootDevice(c *gin.Context) {
 		Code:    200,
 		Message: "receive reboot request, to reboot",
 	})
-	go ctrl.RebootDevice()
+	ctrl.RebootDevice()
+}
+
+func deviceLightBlink(c *gin.Context) {
+	var durSec uint8 = 30
+	if d := c.Query("durSec"); d != "" {
+		if v, err := strconv.ParseUint(d, 10, 8); err == nil {
+			durSec = uint8(v)
+		} else {
+			c.JSON(400,
+				RespBody{
+					Code:    400,
+					Message: "query field durSec is not valid:ßß" + err.Error(),
+				})
+		}
+	}
+	log.Println("set device light blink, durSec: ", durSec)
+	err := ctrl.SetDeviceLightBlink(durSec)
+	if err != nil {
+		c.JSON(500, RespBody{
+			Code:    500,
+			Message: err.Error(),
+		})
+		log.Println("set device light blink error: ", err)
+	} else {
+		c.JSON(200, RespOK(nil))
+	}
 }
 
 func deviceInfo(c *gin.Context) {

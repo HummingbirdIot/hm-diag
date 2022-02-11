@@ -33,6 +33,13 @@
         <Tag v-if="data?.miner?.infoP2pStatus?.natType == 'symmetric'" type="warning">True</Tag>
         <Tag v-else type="success">False</Tag>
       </Cell>
+      <Cell title="Miner Listen Address">
+        {{ data?.miner?.peerBook.length > 0 
+          ? data.miner.peerBook[0].listenAddresses?.length > 0
+            ? data.miner.peerBook[0].listenAddresses[0] : ''
+          : ''
+        }}
+      </Cell>
     </CellGroup>
 
     <CellGroup title=" ">

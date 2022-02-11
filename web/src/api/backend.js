@@ -1,23 +1,28 @@
 import http from "./http";
 
 export async function stateGet() {
-  return await http.get('/inner/state')
+  return await http.get("/inner/state");
 }
 
 // item: gitRepo or gitRelease
 export async function proxyConfigGet(item) {
-  return http.get(`/api/v1/config/proxy?item=${item}`)
+  return http.get(`/api/v1/config/proxy?item=${item}`);
 }
 
 // item: gitRepo or gitRelease
 // body: { type: string, value: string }
 export async function proxyConfigSet(item, body) {
-  return http.post(`/api/v1/config/proxy?item=${item}`, body)
+  return http.post(`/api/v1/config/proxy?item=${item}`, body);
 }
 
 // device
 export async function deviceReboot() {
   return await http.post("/api/v1/device/reboot");
+}
+
+export async function blinkDeviceLight(durSec) {
+  const d = durSec ? durSec : "";
+  return await http.post(`/inner/api/v1/device/light/blink?durSec=${d}`);
 }
 
 export async function lanHotspots() {
