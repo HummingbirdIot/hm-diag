@@ -214,6 +214,7 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	// TODO remove this route after next two version
 	r.GET("/state", stateHandler)
 	r.GET("/inner/registInfo", registInfoHandler)
+	r.GET("/inner/api/v1/pktfwd/state", pktfwdVersion)
 }
 
 func CORSMiddleware() gin.HandlerFunc {

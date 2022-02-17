@@ -1,9 +1,13 @@
 package miner
 
 import (
+	"fmt"
+	"log"
 	"os/exec"
 	"strings"
+	"time"
 
+	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag/jsonrpc"
 	"xdt.com/hm-diag/util"
 )
@@ -79,15 +83,24 @@ func FetchData(url string) map[string]interface{} {
 	if r, ok := res.(map[string]interface{}); ok {
 		name = r["name"].(string)
 	}
-	resMap["infoSummary"] = map[string]interface{}{
+	infoSummary := map[string]interface{}{
 		"firmwareVersion": fwVer,
 		"version":         ver,
 		"name":            name,
 		"height":          resMap["infoHeight"],
 	}
 
+	resMap["infoSummary"] = infoSummary
 	// res, _ = client.Call("print_keys", nil)
 	// resMap["print_keys"] = res
+
+	uptime, err := Uptime()
+	if err == nil {
+		upsec := int64(uptime.Seconds())
+		infoSummary["uptime"] = upsec
+	} else {
+		log.Println("get miner uptime error:", err)
+	}
 
 	return resMap
 }
@@ -109,4 +122,51 @@ func Version() (string, error) {
 		return "", err
 	}
 	return strings.ReplaceAll(string(out), "\n", ""), nil
+}
+
+func Uptime() (time.Duration, error) {
+	resultPre := ">>>result:"
+	cmd := exec.Command(config.MAIN_SCRIPT, "minerStartTime")
+	cmd.Dir = config.Config().GitRepoDir
+	out, err := cmd.Output()
+	if err != nil {
+		return 0, err
+	}
+	lines := strings.Split(string(out), "\n")
+	var startedAt time.Time
+	for _, line := range lines {
+		if strings.HasPrefix(line, resultPre) {
+			str := strings.TrimPrefix(line, resultPre)
+			str = str[:19] // remove ms、zone
+			t, err := util.ParseTimeInLocation("UTC", "2006-01-02T15:04:05", str)
+			if err != nil {
+				log.Println("get miner start time error", err)
+				return 0, err
+			} else {
+				startedAt = t
+			}
+			break
+		}
+	}
+	sec := time.Since(startedAt)
+	return sec, nil
+}
+
+func PacketForwardVersion() (string, error) {
+	resultPre := ">>>result:"
+	log.Println("exec cmd:", config.MAIN_SCRIPT, "pktfwdVersion")
+	cmd := exec.Command(config.MAIN_SCRIPT, "pktfwdVersion")
+	cmd.Dir = config.Config().GitRepoDir
+	out, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	lines := strings.Split(string(out), "\n")
+	for _, line := range lines {
+		if strings.HasPrefix(line, resultPre) {
+			v := strings.TrimPrefix(line, resultPre)
+			return v, nil
+		}
+	}
+	return "", fmt.Errorf("can't get version")
 }

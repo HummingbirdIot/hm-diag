@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"xdt.com/hm-diag/ctrl"
 	"xdt.com/hm-diag/diag"
+	"xdt.com/hm-diag/diag/miner"
 )
 
 func resyncMiner(c *gin.Context) {
@@ -105,4 +106,15 @@ func minerInfo(c *gin.Context) {
 		d = diag.TaskData{Data: diagTask.FetchMinerInfo(), FetchTime: time.Now()}
 	}
 	c.JSON(200, RespOK(d.Data))
+}
+
+func pktfwdVersion(c *gin.Context) {
+	v, err := miner.PacketForwardVersion()
+	if err == nil {
+		c.JSON(200, RespOK(map[string]interface{}{
+			"version": v,
+		}))
+	} else {
+		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+	}
 }
