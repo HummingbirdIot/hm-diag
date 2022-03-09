@@ -44,6 +44,22 @@ func restartMiner(c *gin.Context) {
 	}
 }
 
+func genOnboardingTxn(c *gin.Context) {
+	ownerAddr := c.Query("owner")
+	log.Println("to generate onboarding txn for owner:", ownerAddr)
+	if ownerAddr == "" {
+		c.JSON(400, RespBody{Code: 400, Message: "owner address must be provided"})
+		return
+	}
+	txn, err := ctrl.GenOnboardingTxn(ownerAddr, ctrl.MakerAddr)
+	if err != nil {
+		log.Println("generating onboarding txn error", err)
+		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+		return
+	}
+	c.JSON(200, RespOK(txn))
+}
+
 func snapshotTake(c *gin.Context) {
 	log.Println("to snapshot")
 	ctrl.SnapshotTake()

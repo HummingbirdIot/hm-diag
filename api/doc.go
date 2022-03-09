@@ -116,6 +116,12 @@ type MinerSnapshotDownloadParams struct {
 	Name string `json:"name"`
 }
 
+// swagger:parameters miner-onboarding-txn
+type MinerOnboardingParams struct {
+	// in: query
+	Owner string `json:"owner"`
+}
+
 // swagger:parameters proxy-heliumApi
 type HeliumApiProxyParams struct {
 	// Helim API path

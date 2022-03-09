@@ -344,6 +344,15 @@ paths:
       summary: Set proxy config
       tags:
       - public
+  /api/v1/device/light/blink:
+    post:
+      description: Set Device light color
+      operationId: device-light
+      responses:
+        "200":
+          $ref: '#/responses/EmptyBody'
+      tags:
+      - inner
   /api/v1/device/reboot:
     post:
       description: API will return immediately, you can check
@@ -443,6 +452,21 @@ paths:
         "200":
           $ref: '#/responses/EmptyBody'
       summary: Reset docker
+      tags:
+      - inner
+  /inner/api/v1/miner/onboarding/txn:
+    post:
+      description: Invoke miner to generate onboarding transaction
+      operationId: miner-onboarding-txn
+      parameters:
+      - in: query
+        name: owner
+        type: string
+        x-go-name: Owner
+      responses:
+        "200":
+          $ref: '#/responses/StringBody'
+      summary: Generate onboarding transaction
       tags:
       - inner
   /inner/api/v1/miner/snapshot:

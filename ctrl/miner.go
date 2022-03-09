@@ -3,6 +3,7 @@ package ctrl
 import (
 	"bufio"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"log"
 	"os/exec"
@@ -16,10 +17,12 @@ import (
 )
 
 const (
+	MakerAddr        = "14DdSjvEkBQ46xQ24LAtHwQkAeoUUZHfGCosgJe33nRQ6rZwPG3"
 	resyncMinerCmd   = "./trim_miner.sh"
 	snapshotTakeCmd  = "./snapshot_take.sh take"
 	snapshotStateCmd = "./snapshot_take.sh state"
 	snapshotLoadCmd  = "./snapshot_load.sh"
+	onboardingCmd    = "./obd.sh"
 	restartMinerCmd  = config.MAIN_SCRIPT + " restartMiner"
 )
 
@@ -197,4 +200,24 @@ func SnapshotLoad(file string) {
 		return nil
 	}
 	util.Sgo(fn, "snapshot load error")
+}
+
+func GenOnboardingTxn(ownerAddr string, payerAddr string) (string, error) {
+	if ownerAddr == "" || payerAddr == "" {
+		return "", fmt.Errorf("ownerAddr and payerAddr must be provided")
+	}
+	cmd := exec.Command("bash", onboardingCmd, ownerAddr, payerAddr)
+	cmd.Dir = config.Config().GitRepoDir
+	buf, err := cmd.Output()
+	if err != nil {
+		if buf != nil && len(buf) > 0 {
+			log.Println("gen onboarding cmd error, output:", string(buf), "error:", err)
+		} else {
+			log.Println("gen onboarding cmd error:", err)
+		}
+		return "", err
+	}
+	txnStr := string(buf)
+	log.Println("gen onboarding cmd txn:", txnStr)
+	return txnStr, nil
 }

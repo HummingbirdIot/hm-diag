@@ -97,6 +97,13 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	//   200:MinerInfo
 	r.GET("/api/v1/miner/state", minerInfo)
 
+	// swagger:route POST /inner/api/v1/miner/onboarding/txn inner miner-onboarding-txn
+	// Generate onboarding transaction
+	//
+	// Invoke miner to generate onboarding transaction
+	// Responses:
+	r.POST("/inner/api/v1/miner/onboarding/txn", genOnboardingTxn)
+
 	// swagger:route POST /inner/api/v1/miner/snapshot inner miner-snapshot
 	// Take miner snapshot
 	//

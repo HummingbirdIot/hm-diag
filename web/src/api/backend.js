@@ -47,6 +47,9 @@ export async function minerRestart() {
 export async function minerResync() {
   return await http.post("/api/v1/miner/resync");
 }
+export async function onboarding(ownerAddr) {
+  return await http.post("/inner/api/v1/miner/onboarding/txn?owner=" + ownerAddr);
+}
 
 // workspace
 export async function workspaceUpdateCheck() {

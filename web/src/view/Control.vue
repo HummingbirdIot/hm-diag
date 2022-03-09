@@ -57,6 +57,7 @@
     <Cell title="Workspace Reset">
       <Button size="small" type="danger" plain @click="resetWorkspace">Reset</Button>
     </Cell>
+    <!-- <Cell title="Onboarding" is-link to="/onboarding"></Cell> -->
   </CellGroup>
   <br />
   <br />

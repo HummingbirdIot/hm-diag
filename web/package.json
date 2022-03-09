@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "axios": "^0.24.0",
+    "qrious": "^4.0.2",
     "vant": "^3.0.0",
     "vue": "^3.0.6",
     "vue-router": "4"
