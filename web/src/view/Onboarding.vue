@@ -2,6 +2,8 @@
   <Cell>
     <div class="big-title">Onboarding</div>
   </Cell>
+
+
   <CellGroup>
       <Field v-model="ownerAddress" label="Owner"
         placeholder="input owner address" >
@@ -11,13 +13,15 @@
     </Field>
     <div class="qr-con">
       <canvas id="qr"></canvas>
+      <!-- <div class="qr-example">
+        <img v-show="!showQr" src="../asset/img/qr.png" />
+        <span></span>
+      </div> -->
     </div>
     <div v-if="showQrTip" class="qr-tip">
-      <p>
-        Scan QR image above by <strong>Hummingbird Maker APP</strong> or Helium APP to continue onboarding.
-      </p>
-      <p>Or click <strong><a :href="qrLink">Here</a></strong> on your cellphone to call Helium APP for onboarding.</p>
-
+        <p><strong>Scan</strong> QR image above by Hummingbird Maker APP or Helium APP to continue onboarding.</p>
+        <!-- <p>Or <a :href="qrLink">click here on your cellphone</a> to call Helium APP for onboarding.</p> -->
+        <p>The APP should have logged into the owner's account in advance.</p>
     </div>
   </CellGroup>
 
@@ -25,12 +29,13 @@
 
 <script setup>
 import { ref } from "vue"
-import { CellGroup, Cell, Button, Field, Dialog, Notify, Toast, } from "vant"
+import { CellGroup, Cell, Button, Field, Dialog, Notify, Toast, NoticeBar } from "vant"
 import * as api from "../api"
 import Qrious from "qrious"
 
 const ownerAddress = ref('')
 const showQrTip = ref(false)
+const showQr = ref(false)
 const qrLink = ref('')
 
 function genTxn() {
@@ -54,6 +59,7 @@ function genTxn() {
         size: 300,
         level: 'L'
       });
+      showQr.value= true
       showQrTip.value = true
     })
     .catch(e=>{
@@ -72,7 +78,12 @@ function genTxn() {
   justify-content: center;
 }
 .qr-tip {
-  text-align: center;
   padding: 10px;  
+  margin: auto;
+  max-width: 600px;
+}
+.qr-example {
+  width: 300px;
+  opacity: 0.1;
 }
 </style>

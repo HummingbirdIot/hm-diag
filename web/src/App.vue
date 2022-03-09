@@ -9,7 +9,20 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue';
+import { useStore } from 'vuex'
 import { Tabbar, TabbarItem } from 'vant';
+import * as api from './api'
+
+const store = useStore()
+
+onMounted(()=>{
+  api.stateGet().then(s=>{
+    store.commit('state', s)
+  }).catch(e=>{
+    console.error('init hotspot state data error: ', e)
+  })
+})
 
 </script>
 

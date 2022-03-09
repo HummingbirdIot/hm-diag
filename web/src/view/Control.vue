@@ -57,7 +57,7 @@
     <Cell title="Workspace Reset">
       <Button size="small" type="danger" plain @click="resetWorkspace">Reset</Button>
     </Cell>
-    <!-- <Cell title="Onboarding" is-link to="/onboarding"></Cell> -->
+    <Cell v-if="store.getters.hasOnboarded === false" title="Onboarding" is-link to="/onboarding"></Cell>
   </CellGroup>
   <br />
   <br />
@@ -70,6 +70,9 @@ import { CellGroup, Cell, Button, Toast, Dialog, Progress, Notify, Tag } from 'v
 import * as axios from "axios"
 import * as api from "../api/backend"
 import * as errors from "../util/errors"
+import { useStore } from 'vuex'
+
+const store = useStore()
 
 const toUpdateWorkspace = ref(null)
 const file = ref(null)

@@ -13,6 +13,7 @@ import {
   ActionBarButton,
 } from "vant";
 import { createRouter, createWebHashHistory } from "vue-router";
+import store from "./store"
 import Home from "./Home.vue";
 import App from "./App.vue";
 import DeviceStateInfo from "./view/DeviceStateInfo.vue";
@@ -43,6 +44,6 @@ const router = createRouter({
 
 const app = createApp(App);
 
-app.use(router).mount("#app");
+app.use(router).use(store).mount("#app");
 
 initDateFormat();
