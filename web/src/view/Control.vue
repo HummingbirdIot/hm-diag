@@ -61,11 +61,11 @@
       title="Onboarding" is-link to="/onboarding"></Cell>
   </CellGroup>
 
-  <CellGroup title="Safe" v-if="store.getters.canAccessImportant">
+  <!-- <CellGroup title="Safe" v-if="store.getters.canAccessImportant">
     <Cell title="Access via Public IP">
       <Switch size="small" v-model="accessViaPublicIP" @click="saveSafeConf"/>
     </Cell>
-  </CellGroup>
+  </CellGroup> -->
   <br />
   <br />
   <br />
