@@ -5,10 +5,13 @@
 
 
   <CellGroup>
+      <NoticeBar v-if="store.getters.hasOnboarded" text="This hotspot has onboarded"></NoticeBar>
+      <NoticeBar v-if="!store.getters.canAccessImportant" text="Can't onboarding via public IP"></NoticeBar>
       <Field v-model="ownerAddress" label="Owner"
         placeholder="input owner address" >
       <template #button>
-        <Button size="small" type="primary" plain @click="genTxn">Confirm</Button>
+        <Button size="small" type="primary" plain @click="genTxn" 
+          :disabled="!store.getters.canAccessImportant || store.getters.hasOnboarded">Confirm</Button>
       </template>
     </Field>
     <div class="qr-con">
@@ -29,9 +32,12 @@
 
 <script setup>
 import { ref } from "vue"
+import { useStore } from "vuex"
 import { CellGroup, Cell, Button, Field, Dialog, Notify, Toast, NoticeBar } from "vant"
 import * as api from "../api"
 import Qrious from "qrious"
+
+const store = useStore()
 
 const ownerAddress = ref('')
 const showQrTip = ref(false)

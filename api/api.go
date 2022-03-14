@@ -2,12 +2,16 @@ package api
 
 import (
 	"embed"
+	"encoding/json"
 	"io/fs"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag"
 	"xdt.com/hm-diag/regist"
+	"xdt.com/hm-diag/util"
 )
 
 type RespBody struct {
@@ -102,7 +106,9 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	//
 	// Invoke miner to generate onboarding transaction
 	// Responses:
-	r.POST("/inner/api/v1/miner/onboarding/txn", genOnboardingTxn)
+	r.POST("/inner/api/v1/miner/txn/onboarding", genOnboardingTxn)
+
+	r.POST("/inner/api/v1/miner/txn/assertLocation", genAssertLocationTxn)
 
 	// swagger:route POST /inner/api/v1/miner/snapshot inner miner-snapshot
 	// Take miner snapshot
@@ -198,6 +204,10 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	//   200:EmptyBody
 	r.POST("/api/v1/config/proxy", gitProxySet)
 
+	r.POST("/inner/api/v1/config/safe", saveConfigHandle)
+	r.GET("/inner/api/v1/config/safe", getConfigHandle)
+	r.GET("/inner/api/v1/safe/isViaPrivate", isViaPrivate)
+
 	// swagger:route GET /inner/api/v1/proxy/heliumApi inner proxy-heliumApi
 	// Proxy Helium API
 	//
@@ -224,21 +234,6 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	r.GET("/inner/api/v1/pktfwd/state", pktfwdVersion)
 }
 
-func CORSMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "*")
-		c.Header("Access-Control-Allow-Credentials", "true")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Header("Access-Control-Allow-Methods", "POST, HEAD, PATCH, OPTIONS, GET, PUT")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(204)
-			return
-		}
-		c.Next()
-	}
-}
-
 func stateHandler(c *gin.Context) {
 	var res map[string]interface{}
 	if c := c.Query("cache"); c == "true" {
@@ -261,4 +256,42 @@ func registInfoHandler(c *gin.Context) {
 	} else {
 		c.JSON(200, RespOK(d))
 	}
+}
+
+func saveConfigHandle(c *gin.Context) {
+	var conf config.ConfiFileData
+	err := json.NewDecoder(c.Request.Body).Decode(&conf)
+	if err != nil {
+		c.JSON(400, RespBody{Code: 400, Message: "invalid request body for config"})
+		return
+	}
+	log.Printf("to save config file, content: %#v", conf)
+	err = config.SaveConfigFile(conf)
+	if err != nil {
+		log.Println("save config file error:", err)
+		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+		return
+	}
+	log.Printf("saved config file, content: %#v", conf)
+	c.JSON(200, RespOK(nil))
+}
+
+func getConfigHandle(c *gin.Context) {
+	conf, err := config.ReadConfigFile()
+	if err != nil {
+		log.Println("get config file error:", err)
+		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+		return
+	}
+	c.JSON(200, RespOK(conf))
+}
+
+func isViaPrivate(c *gin.Context) {
+	rIp, ok := c.RemoteIP()
+	if !ok {
+		c.JSON(400, RespBody{Code: 400, Message: "can't get remote IP"})
+		return
+	}
+	r := util.IsPrivateIp(rIp)
+	c.JSON(200, RespOK(r))
 }

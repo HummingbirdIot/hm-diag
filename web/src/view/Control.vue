@@ -57,7 +57,14 @@
     <Cell title="Workspace Reset">
       <Button size="small" type="danger" plain @click="resetWorkspace">Reset</Button>
     </Cell>
-    <Cell v-if="store.getters.hasOnboarded === false" title="Onboarding" is-link to="/onboarding"></Cell>
+    <Cell v-if="store.getters.hasOnboarded == false && store.getters.canAccessImportant" 
+      title="Onboarding" is-link to="/onboarding"></Cell>
+  </CellGroup>
+
+  <CellGroup title="Safe" v-if="store.getters.canAccessImportant">
+    <Cell title="Access via Public IP">
+      <Switch size="small" v-model="accessViaPublicIP" @click="saveSafeConf"/>
+    </Cell>
   </CellGroup>
   <br />
   <br />
@@ -66,7 +73,7 @@
 
 <script setup>
 import { reactive, ref } from "vue"
-import { CellGroup, Cell, Button, Toast, Dialog, Progress, Notify, Tag } from 'vant'
+import { CellGroup, Cell, Button, Switch, Toast, Dialog, Progress, Notify, Tag } from 'vant'
 import * as axios from "axios"
 import * as api from "../api/backend"
 import * as errors from "../util/errors"
@@ -79,6 +86,8 @@ const file = ref(null)
 const showProgress = ref(false)
 const progress = ref(0)
 const snapState = reactive({ state: "unknown", file: "", time: "not generated" })
+
+const accessViaPublicIP = ref(false)
 
 function reboot() {
   api.deviceReboot()
@@ -240,6 +249,34 @@ function doResetWorkspace() {
     })
 }
 
+function getSafeConf() {
+  api.configGet()
+    .then(r => {
+      accessViaPublicIP.value = r.publicAccess == 1 ? true : false
+      store.commit("safeConf", r)
+    })
+}
+function saveSafeConf() {
+  Dialog.confirm({ 
+    title: "Important !", 
+    message: "For safety, when disable \"Access via Public IP\"," 
+      + "server will only allow access some important operations via private IP, eg: Onboarding."
+  })
+  .then(() => {
+    const v = accessViaPublicIP.value ? 1 : 2
+    api.configSet({PublicAccess: v})
+      .then(r => {
+        Notify({type:"success", message: "success"})
+      })
+      .catch(e=>{
+      })
+  })
+  .catch(()=>{
+    accessViaPublicIP.value = !accessViaPublicIP.value
+  })
+}
+
+getSafeConf()
 snapshotState()
 workspaceUpdateCheck()
 

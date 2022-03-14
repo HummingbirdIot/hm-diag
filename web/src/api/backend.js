@@ -15,6 +15,19 @@ export async function proxyConfigSet(item, body) {
   return http.post(`/api/v1/config/proxy?item=${item}`, body);
 }
 
+export async function configGet() {
+  return http.get("/inner/api/v1/config/safe")
+}
+
+export async function configSet(conf) {
+  return http.post("/inner/api/v1/config/safe", conf)
+}
+
+// check if remote ip for server is private ip (eg: localhost, LAN IP)
+export async function isViaPrivate() {
+  return http.get("/inner/api/v1/safe/isViaPrivate")
+}
+
 // device
 export async function deviceReboot() {
   return await http.post("/api/v1/device/reboot");
@@ -48,7 +61,7 @@ export async function minerResync() {
   return await http.post("/api/v1/miner/resync");
 }
 export async function onboarding(ownerAddr) {
-  return await http.post("/inner/api/v1/miner/onboarding/txn?owner=" + ownerAddr);
+  return await http.post("/inner/api/v1/miner/txn/onboarding?owner=" + ownerAddr);
 }
 
 // workspace

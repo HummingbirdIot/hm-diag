@@ -3,9 +3,11 @@ package ctrl
 import (
 	"bufio"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/pkg/errors"
 	"xdt.com/hm-diag/config"
+	"xdt.com/hm-diag/diag/jsonrpc"
 	"xdt.com/hm-diag/util"
 )
 
@@ -22,7 +25,6 @@ const (
 	snapshotTakeCmd  = "./snapshot_take.sh take"
 	snapshotStateCmd = "./snapshot_take.sh state"
 	snapshotLoadCmd  = "./snapshot_load.sh"
-	onboardingCmd    = "./obd.sh"
 	restartMinerCmd  = config.MAIN_SCRIPT + " restartMiner"
 )
 
@@ -206,18 +208,104 @@ func GenOnboardingTxn(ownerAddr string, payerAddr string) (string, error) {
 	if ownerAddr == "" || payerAddr == "" {
 		return "", fmt.Errorf("ownerAddr and payerAddr must be provided")
 	}
-	cmd := exec.Command("bash", onboardingCmd, ownerAddr, payerAddr)
-	cmd.Dir = config.Config().GitRepoDir
-	buf, err := cmd.Output()
+	jrClient := jsonrpc.Client{Url: config.Config().MinerUrl}
+
+	re, err := jrClient.Call("txn_add_gateway", map[string]string{
+		"owner": ownerAddr,
+		"payer": payerAddr,
+	})
 	if err != nil {
-		if buf != nil && len(buf) > 0 {
-			log.Println("gen onboarding cmd error, output:", string(buf), "error:", err)
-		} else {
-			log.Println("gen onboarding cmd error:", err)
-		}
 		return "", err
 	}
-	txnStr := string(buf)
-	log.Println("gen onboarding cmd txn:", txnStr)
-	return txnStr, nil
+	result, ok := re.(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("miner txn add gateway request result error: %#v", re)
+	}
+	txn, ok := result["result"].(string)
+	if !ok {
+		return "", fmt.Errorf("miner txn add gateway request result error: %#v", result)
+	}
+	return txn, nil
+}
+
+func GenAssertLocationTxn(ownerAddr, payerAddr, location string, nonce int) (string, error) {
+	// TODO: is free ? payerAddr = ownerAddr ?
+	if ownerAddr == "" || payerAddr == "" || location == "" {
+		return "", fmt.Errorf("ownerAddr, location and payerAddr must be provided")
+	}
+	jrClient := jsonrpc.Client{Url: config.Config().MinerUrl}
+
+	re, err := jrClient.Call("txn_assert_location", map[string]string{
+		"owner": ownerAddr,
+		"payer": payerAddr,
+		"h3":    location,
+	})
+	if err != nil {
+		return "", err
+	}
+	result, ok := re.(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("miner txn assert location request result error: %#v", re)
+	}
+	txn, ok := result["result"].(string)
+	if !ok {
+		return "", fmt.Errorf("miner txn assert location request result error: %#v", result)
+	}
+	return txn, nil
+}
+
+type HeliumHotspot struct {
+	SpeculativeNonce int     `json:"speculative_nonce"`
+	Lng              float64 `json:"lng"`
+	Lat              float64 `json:"lat"`
+	TimestampAdded   string  `json:"timestamp_added"`
+	// more field ...
+}
+type HeliumHotspotResp struct {
+	Data HeliumHotspot `json:"data"`
+}
+
+type OnboardingRecord struct {
+	OnboardingKey string           `json:"onboarding_key"`
+	PublicAddress string           `json:"public_address"`
+	Maker         *OnboardingMaker `json:"maker"`
+}
+
+type OnboardingMaker struct {
+	id                 int    `json:"id"`
+	Address            string `json:"address"`
+	LocationNonceLimit int    `json:"locationNonceLimit"`
+}
+
+func isFreeAssertLocation(hotspotAddr string) (bool, error) {
+	url := "https://api.helium.io/v1/hotspots/" + hotspotAddr
+	resp, err := http.Get(url)
+	if err != nil {
+		return false, err
+	}
+	var hotspot HeliumHotspotResp
+	err = json.NewDecoder(resp.Body).Decode(&hotspot)
+	if err != nil {
+		return false, err
+	}
+
+	url = "https://onboarding.dewi.org/api/v2/hotspots/" + hotspotAddr
+	resp, err = http.Get(url)
+	if err != nil {
+		return false, err
+	}
+
+	var onboardingRecord OnboardingRecord
+	err = json.NewDecoder(resp.Body).Decode(&onboardingRecord)
+	if err != nil {
+		return false, err
+	}
+
+	isFree := false
+	makerLimit := 0
+	if onboardingRecord.Maker != nil {
+		makerLimit = onboardingRecord.Maker.LocationNonceLimit
+	}
+	isFree = hotspot.Data.SpeculativeNonce < makerLimit
+	return isFree, nil
 }

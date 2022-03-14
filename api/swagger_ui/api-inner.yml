@@ -463,9 +463,6 @@ paths:
         name: owner
         type: string
         x-go-name: Owner
-      responses:
-        "200":
-          $ref: '#/responses/StringBody'
       summary: Generate onboarding transaction
       tags:
       - inner

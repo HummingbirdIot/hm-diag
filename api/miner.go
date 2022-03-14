@@ -60,6 +60,29 @@ func genOnboardingTxn(c *gin.Context) {
 	c.JSON(200, RespOK(txn))
 }
 
+func genAssertLocationTxn(c *gin.Context) {
+	ownerAddr := c.Query("owner")
+	payerAddr := c.Query("payer")
+	location := c.Query("h3")
+	nonceStr := c.Query("nonce")
+	nonce, err := strconv.Atoi(nonceStr)
+	if err != nil {
+		nonce = 1
+	}
+	log.Printf("to generate assert location txn for owner: %s, payer: %s", ownerAddr, payerAddr)
+	if ownerAddr == "" || payerAddr == "" || location == "" {
+		c.JSON(400, RespBody{Code: 400, Message: "owner, payer and h3 must be provided"})
+		return
+	}
+	txn, err := ctrl.GenAssertLocationTxn(ownerAddr, payerAddr, location, nonce)
+	if err != nil {
+		log.Println("generating assert location txn error:", err)
+		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+		return
+	}
+	c.JSON(200, RespOK(txn))
+}
+
 func snapshotTake(c *gin.Context) {
 	log.Println("to snapshot")
 	ctrl.SnapshotTake()

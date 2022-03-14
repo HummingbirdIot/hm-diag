@@ -13,6 +13,7 @@ import { onMounted } from 'vue';
 import { useStore } from 'vuex'
 import { Tabbar, TabbarItem } from 'vant';
 import * as api from './api'
+import isPrivateIp from 'private-ip'
 
 const store = useStore()
 
@@ -22,7 +23,24 @@ onMounted(()=>{
   }).catch(e=>{
     console.error('init hotspot state data error: ', e)
   })
+  localEnvJudge()
+  isViaPrivate()
 })
+
+function localEnvJudge() {
+  const h = window.location.hostname
+  if (h === 'localhost') return true
+  const r = isPrivateIp(h)
+  store.commit('isInLocal', r)
+}
+
+function isViaPrivate() {
+  api.isViaPrivate()
+    .then(r=>{
+      store.commit('isViaPrivate', r)
+    })
+}
+
 
 </script>
 

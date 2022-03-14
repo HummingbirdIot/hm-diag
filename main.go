@@ -97,7 +97,7 @@ func main() {
 
 		// http server
 		r := gin.Default()
-		r.Use(api.CORSMiddleware())
+		r.Use(api.CORSMiddleware()).Use(api.PrivateAccessMiddle())
 		api.Route(r, webFS, swagFS)
 		r.Run(fmt.Sprintf(":%d", opt.Port))
 	} else {
