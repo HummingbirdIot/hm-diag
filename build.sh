@@ -22,7 +22,7 @@ function buildDebPack() {
 
 	# Build and Package
 
-	go build
+	go build -ldflags "-X main.Version=${version} -X main.Githash=`git rev-parse HEAD`"
 
 
 	rm -fr ./build-deb/usr/local/bin/.gitkeep
@@ -38,7 +38,7 @@ function pack() {
 		&& yarn install \
 		&& yarn run release \
 		&& cd .. \
-		&& go build \
+		&& go build -ldflags "-X main.Version=${version} -X main.Githash=`git rev-parse HEAD`"
 		&& upx ./hm-diag	
 }
 

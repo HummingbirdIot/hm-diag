@@ -228,6 +228,8 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	//   200:AllState
 	r.GET("/inner/state", stateHandler)
 
+	r.GET("/inner/api/v1/version", versionHandler)
+
 	// TODO remove this route after next two version
 	r.GET("/state", stateHandler)
 	r.GET("/inner/registInfo", registInfoHandler)
@@ -284,6 +286,10 @@ func getConfigHandle(c *gin.Context) {
 		return
 	}
 	c.JSON(200, RespOK(conf))
+}
+
+func versionHandler(c *gin.Context) {
+	c.JSON(200, gin.H{"version": config.Version, "githash": config.Githash})
 }
 
 func isViaPrivate(c *gin.Context) {

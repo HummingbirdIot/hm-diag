@@ -19,6 +19,13 @@ import (
 	"xdt.com/hm-diag/util"
 )
 
+// set by build with -ldflags eg:
+// go build -ldflags "-X main.Version=${version} -X main.Githash=`git rev-parse HEAD`"
+var (
+	Githash = ""
+	Version = ""
+)
+
 // TODO: unit test
 // TODO: log format -- TRACE,INFO,WARN,ERROR
 
@@ -46,11 +53,14 @@ func usage() {
 	fmt.Fprintf(os.Stdout, "Subcommand:\n")
 	fmt.Fprintf(os.Stdout, "  get\n    get info to stdout\n")
 	fmt.Fprintf(os.Stdout, "  server\n    run http server, can omit it\n")
+	fmt.Fprintf(os.Stdout, "  version\n    get version info to stdout\n")
 	fmt.Fprintf(os.Stdout, "Options:\n")
 	flag.PrintDefaults()
 }
 
 func init() {
+	setVersion()
+
 	flag.IntVar(&opt.Port, "p", 8090, "server listening port")
 	flag.StringVar(&opt.LanDevIntface, "lan", "eth0", "lan device discovery net interface")
 	flag.StringVar(&opt.MinerUrl, "m", "http://127.0.0.1:4467", "miner http url")
@@ -72,6 +82,11 @@ func init() {
 		GitRepoUrl:    opt.GitRepoUrl,
 		IntervalSec:   opt.IntervalSec,
 	})
+}
+
+func setVersion() {
+	config.Version = Version
+	config.Githash = Githash
 }
 
 func main() {
@@ -100,6 +115,8 @@ func main() {
 		r.Use(api.CORSMiddleware()).Use(api.PrivateAccessMiddle())
 		api.Route(r, webFS, swagFS)
 		r.Run(fmt.Sprintf(":%d", opt.Port))
+	} else if flag.Arg(0) == "version" {
+		fmt.Printf("version: %s githash: %s\n", Version, Githash)
 	} else {
 		flag.Usage()
 	}
