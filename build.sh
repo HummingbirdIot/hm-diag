@@ -38,7 +38,7 @@ function pack() {
 		&& yarn install \
 		&& yarn run release \
 		&& cd .. \
-		&& go build -ldflags "-X main.Version=${version} -X main.Githash=`git rev-parse HEAD`"
+		&& go build -ldflags "-X main.Version=${version} -X main.Githash=`git rev-parse HEAD`" \
 		&& upx ./hm-diag	
 }
 
