@@ -4,6 +4,10 @@ export async function stateGet() {
   return await http.get("/inner/state");
 }
 
+export async function version() {
+  return await http.get("/inner/api/v1/version");
+}
+
 // item: gitRepo or gitRelease
 export async function proxyConfigGet(item) {
   return http.get(`/api/v1/config/proxy?item=${item}`);

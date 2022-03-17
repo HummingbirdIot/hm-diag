@@ -289,7 +289,11 @@ func getConfigHandle(c *gin.Context) {
 }
 
 func versionHandler(c *gin.Context) {
-	c.JSON(200, gin.H{"version": config.Version, "githash": config.Githash})
+	c.JSON(200,
+		RespOK(gin.H{
+			"version": config.Version,
+			"githash": config.Githash,
+		}))
 }
 
 func isViaPrivate(c *gin.Context) {
