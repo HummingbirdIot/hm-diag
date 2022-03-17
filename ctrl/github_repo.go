@@ -59,6 +59,18 @@ func GitRepoReset() error {
 	return nil
 }
 
+func getRepoBranch() (string, error) {
+	cmdArr := strings.Split("git rev-parse --abbrev-ref HEAD", " ")
+	cmd := exec.Command(cmdArr[0], cmdArr[1:]...)
+	cmd.Dir = config.Config().GitRepoDir
+	buf, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	res := strings.TrimSpace(string(buf))
+	return res, nil
+}
+
 func hntIotClone(dir string) error {
 	gitRepoUrl := config.Config().GitRepoUrl
 	proxyUrl, err := RepoMirrorUrl(config.Config().GitRepoDir)
@@ -66,7 +78,12 @@ func hntIotClone(dir string) error {
 		log.Printf("use proxy %s to clone git repo %s\n", proxyUrl, gitRepoUrl)
 		gitRepoUrl = strings.ReplaceAll(gitRepoUrl, config.GITHUB_URL, proxyUrl)
 	}
-	cmdStr := fmt.Sprintf(" git clone -b main --depth=1 %s %s", gitRepoUrl, dir)
+	branch, err := getRepoBranch()
+	if err != nil {
+		return err
+	}
+	cmdStr := fmt.Sprintf(" git clone -b %s --depth=1 %s %s",
+		branch, gitRepoUrl, dir)
 	log.Println("exec cmd:", cmdStr)
 	cmd := exec.Command("bash", "-c", cmdStr)
 	p, err := cmd.StdoutPipe()
@@ -97,10 +114,16 @@ func hntIotClone(dir string) error {
 		return errors.WithStack(errors.WithMessage(err, "git clone exit error"))
 	}
 
-	rmOriginCmd := "git remote remove origin"
-	addOriginCmd := "git remote add origin " + config.Config().GitRepoUrl
-	exec.Command("bash", "-c", rmOriginCmd).Run()
-	exec.Command("bash", "-c", addOriginCmd).Run()
+	setOrigin := "git remote set-url origin " + config.Config().GitRepoUrl
+	cmd = exec.Command("bash", "-c", setOrigin)
+	cmd.Dir = dir
+	buf, err := cmd.Output()
+	if err != nil {
+		log.Println("git remote set-url exit error:", err.Error())
+		return err
+	} else {
+		log.Println("git remote set-url output:", string(buf))
+	}
 
 	return nil
 }

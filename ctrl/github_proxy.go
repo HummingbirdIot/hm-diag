@@ -176,7 +176,11 @@ func RepoMirrorUrl(repoDir string) (string, error) {
 	}
 	re := regexp.MustCompile(`url\.(.*)\.insteadof.*`)
 	f := re.FindStringSubmatch(s)
-	return f[1], nil
+	u := f[1]
+	if !strings.HasSuffix(u, "/") {
+		u = u + "/"
+	}
+	return u, nil
 }
 
 func ReleaseFileProxy(repoDir string) (*ProxyItem, error) {
