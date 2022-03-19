@@ -4,18 +4,19 @@
     <TabbarItem replace to="/" icon="home-o" active>Home</TabbarItem>
     <TabbarItem replace to="/setting" icon="setting-o">Setting</TabbarItem>
     <TabbarItem replace to="/control" icon="diamond-o">Control</TabbarItem>
-    <TabbarItem replace to="/neighbor" icon="search">Neighbors</TabbarItem>
+    <TabbarItem v-if="showNeighbor" replace to="/neighbor" icon="search">Neighbors</TabbarItem>
   </Tabbar>
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { useStore } from 'vuex'
 import { Tabbar, TabbarItem } from 'vant';
 import * as api from './api'
 import isPrivateIp from 'private-ip'
 
 const store = useStore()
+const showNeighbor = ref(true)
 
 onMounted(()=>{
   api.stateGet().then(s=>{
@@ -40,6 +41,13 @@ function isViaPrivate() {
       store.commit('isViaPrivate', r)
     })
 }
+
+function isShowNeighbors() {
+  if (window.location.pathname.indexOf('/proxy/') === 0) {
+    showNeighbor.value = false
+  }
+}
+isShowNeighbors()
 
 
 </script>
