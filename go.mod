@@ -1,12 +1,12 @@
 module xdt.com/hm-diag
 
-go 1.17
+go 1.18
 
 require (
-	github.com/ThomasRooney/gexpect v0.0.0-20161231170123-5482f0350944
 	github.com/gin-gonic/gin v1.7.7
 	github.com/godbus/dbus/v5 v5.0.5
 	github.com/google/uuid v1.3.0
+	github.com/gorilla/websocket v1.5.0
 	github.com/holoplot/go-avahi v1.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/shirou/gopsutil/v3 v3.21.9
@@ -21,8 +21,6 @@ require (
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/json-iterator/go v1.1.9 // indirect
-	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
-	github.com/kr/pty v1.1.1 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180228061459-e0a39a4cb421 // indirect
