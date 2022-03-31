@@ -3,6 +3,7 @@ package link
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -12,11 +13,11 @@ import (
 	"xdt.com/hm-diag/link/message"
 )
 
-func requestLocal(mr *message.HttpRequest) (*message.Msg[message.HttpResponseData], error) {
+func requestLocal(mr *message.HttpRequest) (*message.HttpResponse, error) {
 	rd := mr.Data
 	// for security reasons, only support request http api on the server
 	urlStr := LocalHost() + rd.URL
-
+	log.Printf("rpc to %#v", mr)
 	u, err := url.Parse(urlStr)
 	if err != nil {
 		return nil, errors.WithMessage(err, "invalid url "+rd.URL)

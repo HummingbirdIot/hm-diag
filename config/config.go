@@ -30,10 +30,10 @@ type ConfiFileData struct {
 }
 
 const MAIN_SCRIPT = "./hummingbird_iot.sh"
-const PROXY_ETC_DIR = "/usr/local/etc/hm-diag"
-const PROXY_ETC_REPO = PROXY_ETC_DIR + "/git-repo-proxy.json"
-const PROXY_ETC_RELEASE = PROXY_ETC_DIR + "/git-release-proxy.json"
-const CONF_ETC_FILE = PROXY_ETC_DIR + "/config.json"
+const ETC_DIR = "/usr/local/etc/hm-diag"
+const PROXY_ETC_REPO = ETC_DIR + "/git-repo-proxy.json"
+const PROXY_ETC_RELEASE = ETC_DIR + "/git-release-proxy.json"
+const CONF_ETC_FILE = ETC_DIR + "/config.json"
 const GITHUB_URL = "https://github.com/"
 
 var conf *GlobalConfig

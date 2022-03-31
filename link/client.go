@@ -1,13 +1,12 @@
 package link
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/pkg/errors"
-	"xdt.com/hm-diag/diag"
 	"xdt.com/hm-diag/link/message"
 )
 
@@ -16,25 +15,24 @@ type Client struct {
 	conn   *UplinkConn
 }
 
-type ClientConfig struct {
-	ID     string `json:"id"`
-	Auth   string `json:"auth"`
-	Server string `json:"server"`
-}
-
 const (
 	SECURITY_KEY_HEADER = "X-SECRET-KEY"
 	SECURITY_ID         = "X-SECRET-ID"
 )
 
-func NewClient(config ClientConfig) (*Client, error) {
-	if config.Auth == "" || config.Server == "" {
-		return nil, fmt.Errorf("auth and server must be provided")
-	}
+func newClient(config ClientConfig) (*Client, error) {
 	return &Client{config: config}, nil
 }
 
-func (c *Client) Start() error {
+func (c *Client) Start(ctx context.Context) error {
+	if c.config.Auth == "" || c.config.Server == "" {
+		return fmt.Errorf("auth and server must be provided")
+	}
+
+	if c.conn != nil {
+		go c.conn.Close()
+	}
+
 	conn, err := NewConn(ConnConfig{
 		header: map[string][]string{
 			SECURITY_KEY_HEADER: {c.config.Auth},
@@ -46,16 +44,22 @@ func (c *Client) Start() error {
 	if err != nil {
 		return errors.WithMessage(err, "client start")
 	}
+
 	conn.SetConnectHandler(c.onConnectHandler)
 	c.conn = conn
-	err = c.conn.Start()
+	err = c.conn.Start(ctx)
 	if err != nil {
 		return errors.WithMessage(err, "client start")
 	}
+	go c.read(ctx)
 	return nil
 }
 
 func (c *Client) WriteMessage(msg interface{}) error {
+	if !c.conn.Connected() {
+		return fmt.Errorf("connection is not established")
+	}
+
 	err := c.conn.WriteJSON(msg)
 	if err != nil {
 		log.Println("error writing message: ", err)
@@ -63,46 +67,60 @@ func (c *Client) WriteMessage(msg interface{}) error {
 	return nil
 }
 
-func (c *Client) read() {
+func (c *Client) read(ctx context.Context) {
+	log.Println("started read message loop")
 	// TODO: for error
 	for {
 		if !c.conn.Connected() {
 			log.Println("disconnected, give up reading")
 			break
 		}
+		if ctx.Err() != nil {
+			log.Println("break read message loop cause context:", ctx.Err())
+			break
+		}
+
+		log.Println("to read message ...")
 		_, buf, err := c.conn.ReadMessage()
 		if err != nil {
 			log.Println("error reading message: ", err)
+			break
 		} else {
-			var msg message.Msg[any]
+			log.Println("go ws message:", string(buf))
+			var msg map[string]interface{}
 			err := json.Unmarshal(buf, &msg)
 			if err != nil {
 				log.Printf("invalid message: %s, err: %s", string(buf), err)
 				continue
 			}
 			// TODO: pool
-			go c.handleMessage(&msg)
+			go c.handleMessage(&msg, buf)
 		}
 	}
 }
 
-func (c *Client) handleMessage(msg *message.Msg[any]) {
-	t := message.Typeof(msg)
+func (c *Client) handleMessage(msg *map[string]interface{}, rawBuf []byte) {
+	t, err := message.Typeof(msg)
+	if err != nil {
+		log.Printf("unknown message type for %#v, error: %s\n", msg, err)
+	}
 	switch t {
 	case message.TYPE_HTTP_REQUEST:
-		c.handleRpcRequest(&msg)
+		var r message.HttpRequest
+		err := json.Unmarshal(rawBuf, &r)
+		if err != nil {
+			log.Println("invalid message for http request")
+			return
+		}
+		c.handleRpcRequest(&r)
 	default:
 		log.Println("unknown message type:", t)
 	}
 }
 
-func (c *Client) handleRpcRequest(msg interface{}) {
-	m, ok := msg.(*message.HttpRequest)
-	if !ok {
-		log.Printf("invalid rpc request message, type: %#v", msg)
-		return
-	}
-	resp, err := requestLocal(m)
+func (c *Client) handleRpcRequest(r *message.HttpRequest) {
+	log.Printf("handle message: %#v", r)
+	resp, err := requestLocal(r)
 	if err != nil {
 		log.Printf("do request error: %v", err)
 		return
@@ -110,20 +128,7 @@ func (c *Client) handleRpcRequest(msg interface{}) {
 	c.WriteMessage(resp)
 }
 
-func (c *Client) onConnectHandler() error {
-	if diag.TaskInstance() == nil {
-		// wait for init diag task
-		time.Sleep(time.Second * 1)
-		c.onConnectHandler()
-	}
-	d := diag.TaskInstance().Data()
-	if d.FetchTime.IsZero() {
-		// wait for load data
-		time.Sleep(time.Second * 1)
-		c.onConnectHandler()
-	} else {
-		c.WriteMessage(message.OfReportData(d))
-	}
-
+func (c *Client) onConnectHandler(ctx context.Context) error {
+	log.Println("in client onConnectHandler")
 	return nil
 }

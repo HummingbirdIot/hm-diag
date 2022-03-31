@@ -1,23 +1,13 @@
 package message
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
 )
 
-type Meta struct {
-	MsgId       string            `json:"msgId"`
-	ContentType string            `json:"contentType"` // for future
-	Header      map[string]string `json:"header"`
-}
-
 const DEFAULT_CONTENT_TYPE = "application/json"
-
-type Msg[T any] struct {
-	Meta Meta `json:"meta"`
-	Data T    `json:"data"`
-}
 
 // put the message type value in message header TYPE_HEADER
 type TypeHeaderValue string
@@ -37,10 +27,27 @@ const (
 	D_TYPE_STATE = "State"
 )
 
+type Meta struct {
+	MsgId       string            `json:"msgId"`
+	ContentType string            `json:"contentType"` // for future
+	Header      map[string]string `json:"header"`
+}
+
+type ReportData struct {
+	Meta Meta        `json:"meta"`
+	Data interface{} `json:"data"`
+}
+
 // type for http over ws
 
-type HttpRequest Msg[HttpRequestData]
-type HttpResponse Msg[HttpResponseData]
+type HttpRequest struct {
+	Meta Meta            `json:"meta"`
+	Data HttpRequestData `json:"data"`
+}
+type HttpResponse struct {
+	Meta Meta             `json:"meta"`
+	Data HttpResponseData `json:"data"`
+}
 
 type HttpRequestData struct {
 	Method        string            `json:"method"`
@@ -57,8 +64,8 @@ type HttpResponseData struct {
 	Body          string      `json:"body"`
 }
 
-func OfReportData(d any) *Msg[any] {
-	return &Msg[any]{
+func OfReportData(d any) *ReportData {
+	return &ReportData{
 		Meta: Meta{
 			MsgId:       uuid.NewString(),
 			ContentType: DEFAULT_CONTENT_TYPE,
@@ -71,8 +78,8 @@ func OfReportData(d any) *Msg[any] {
 	}
 }
 
-func OfHttpRequest(msgId string, d HttpRequestData) *Msg[HttpRequestData] {
-	return &Msg[HttpRequestData]{
+func OfHttpRequest(msgId string, d HttpRequestData) *HttpRequest {
+	return &HttpRequest{
 		Meta: Meta{
 			MsgId:       msgId,
 			ContentType: DEFAULT_CONTENT_TYPE,
@@ -84,8 +91,8 @@ func OfHttpRequest(msgId string, d HttpRequestData) *Msg[HttpRequestData] {
 	}
 }
 
-func OfHttpResponse(msgId string, d HttpResponseData) *Msg[HttpResponseData] {
-	return &Msg[HttpResponseData]{
+func OfHttpResponse(msgId string, d HttpResponseData) *HttpResponse {
+	return &HttpResponse{
 		Meta: Meta{
 			MsgId:       msgId,
 			ContentType: DEFAULT_CONTENT_TYPE,
@@ -97,12 +104,24 @@ func OfHttpResponse(msgId string, d HttpResponseData) *Msg[HttpResponseData] {
 	}
 }
 
-func Typeof(msg *Msg[any]) string {
-	t := msg.Meta.Header[TYPE_HEADER]
-	return t
+func Typeof(msg *map[string]interface{}) (t string, err error) {
+	t, err = headerOf(msg, TYPE_HEADER)
+	return
 }
 
-func DataTypeof(msg *Msg[any]) string {
-	t := msg.Meta.Header[DATA_TYPE_HEADER]
-	return t
+func DataTypeof(msg *map[string]interface{}) (t string, err error) {
+	t, err = headerOf(msg, DATA_TYPE_HEADER)
+	return
+}
+
+func headerOf(msg *map[string]interface{}, name string) (string, error) {
+	m := (*msg)["meta"]
+	if meta, ok := m.(map[string]interface{}); ok {
+		if header, ok := meta["header"].(map[string]interface{}); ok {
+			if t, ok := header[name].(string); ok {
+				return t, nil
+			}
+		}
+	}
+	return "", fmt.Errorf("can't get type of message")
 }

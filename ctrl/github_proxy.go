@@ -35,7 +35,7 @@ type ProxyConf struct {
 }
 
 func init() {
-	err := os.MkdirAll(config.PROXY_ETC_DIR, os.ModeDir)
+	err := os.MkdirAll(config.ETC_DIR, os.ModeDir)
 	if err != nil {
 		log.Fatalln(errors.WithMessage(err, "create hm-diag etc dir error"))
 	}
