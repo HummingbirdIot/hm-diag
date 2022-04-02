@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"embed"
 	"encoding/json"
 	"flag"
@@ -16,7 +15,6 @@ import (
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/devdis"
 	"xdt.com/hm-diag/diag"
-	"xdt.com/hm-diag/link"
 	"xdt.com/hm-diag/regist"
 	"xdt.com/hm-diag/util"
 )
@@ -96,7 +94,7 @@ func setVersion() {
 func main() {
 	diag.InitTask(*config.Config())
 	diagTask := diag.TaskInstance()
-	rootCtx := context.Background()
+	// rootCtx := context.Background()
 	if flag.Arg(0) == "get" {
 		if !opt.Verbose {
 			log.SetOutput(io.Discard)
@@ -115,7 +113,7 @@ func main() {
 		util.Sgo(devdis.Init, "init device discovery error")
 
 		// link
-		link.Start(rootCtx)
+		// link.Start(rootCtx)
 
 		// http server
 		r := gin.Default()
