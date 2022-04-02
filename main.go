@@ -31,11 +31,13 @@ var (
 // TODO: unit test
 // TODO: log format -- TRACE,INFO,WARN,ERROR
 
-//go:embed web/release/*
-var webFS embed.FS
+var (
+	//go:embed web/release/*
+	webFS embed.FS
 
-//go:embed api/swagger_ui/*
-var swagFS embed.FS
+	//go:embed api/swagger_ui/*
+	swagFS embed.FS
+)
 
 type Opt struct {
 	Port          int

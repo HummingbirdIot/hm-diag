@@ -1,15 +1,23 @@
 package miner
 
 import (
+	_ "embed"
 	"fmt"
 	"log"
 	"os/exec"
+	"regexp"
 	"strings"
 	"time"
 
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag/jsonrpc"
 	"xdt.com/hm-diag/util"
+)
+
+var (
+	//go:embed hotspot-info.sh
+	hotspotInfoScript string
+	hotspotInfoReg    = regexp.MustCompile(`"location: (\S*)",.*"owner: /p2p/(.*)"`)
 )
 
 type PeerBookParams struct {
@@ -55,7 +63,14 @@ type MinerInfo struct {
 	PeerBook      PeerBook      `json:"peerBook"`
 }
 
+type BaseInfo struct {
+	Owner    string `json:"owner"`
+	Location string `json:"location"`
+}
+
 func FetchData(url string) map[string]interface{} {
+	// TODO 去掉 map，采用强类型
+
 	client := &jsonrpc.Client{Url: url}
 	resMap := make(map[string]interface{})
 	res, _ := client.Call("info_height", nil)
@@ -83,11 +98,19 @@ func FetchData(url string) map[string]interface{} {
 	if r, ok := res.(map[string]interface{}); ok {
 		name = r["name"].(string)
 	}
+
+	baseInfo, err := HotspotBaseInfo()
+	if err != nil {
+		log.Println("get hotspot base info error:", err)
+	}
+
 	infoSummary := map[string]interface{}{
 		"firmwareVersion": fwVer,
 		"version":         ver,
 		"name":            name,
 		"height":          resMap["infoHeight"],
+		"location":        baseInfo.Location,
+		"owner":           baseInfo.Owner,
 	}
 
 	resMap["infoSummary"] = infoSummary
@@ -169,4 +192,21 @@ func PacketForwardVersion() (string, error) {
 		}
 	}
 	return "", fmt.Errorf("can't get version")
+}
+
+func HotspotBaseInfo() (BaseInfo, error) {
+	cmd := exec.Command("bash", "-c", hotspotInfoScript)
+	buf, err := cmd.Output()
+	if err != nil {
+		return BaseInfo{}, err
+	}
+
+	// str := `[\loc: 8c309948840dbff", "owner: /p2p/144ZZ7GRjFuQNhSuPz7UQzagGXoD7ohiMyHVW6LbY3SEyjNvEjG"]`
+	str := string(buf)
+	matches := hotspotInfoReg.FindStringSubmatch(str)
+	if len(matches) != 3 {
+		return BaseInfo{}, fmt.Errorf("wrong result")
+	}
+
+	return BaseInfo{Location: matches[1], Owner: matches[2]}, nil
 }
