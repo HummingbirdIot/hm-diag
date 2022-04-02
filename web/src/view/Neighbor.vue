@@ -163,7 +163,7 @@ watch(searchTxt, v => {
 })
 
 onMounted(async () => {
-  api.fetchHeliumHeight().then(h => {
+  api.blockHeight().then(h => {
     heliumHeight.value = h
   }).catch(err => {
     Dialog.alert({ message: "Failed to load helium block height" });
