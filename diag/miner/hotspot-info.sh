@@ -8,11 +8,11 @@ PubKey = blockchain_swarm:pubkey_bin(),\
 case blockchain_ledger_v1:find_gateway_info(PubKey, Ledger) of\
     {ok, Gateway} ->\
          GWLoc = case blockchain_ledger_gateway_v2:location(Gateway) of \
-                    undefined -> undefined; \
+                    undefined -> 'none'; \
                     L -> h3:to_string(L) \
                     end, \
          GWOwnAddr = libp2p_crypto:pubkey_bin_to_p2p(blockchain_ledger_gateway_v2:owner_address(Gateway)),\
          [lists:concat(['location: ', GWLoc]), lists:concat(['owner: ', GWOwnAddr])];\
     _ ->\
-         [lists:concat(['location: ', undefined]), lists:concat(['owner: ', undefined])]\
+         [lists:concat(['location: ', 'none']), lists:concat(['owner: ', '/p2p/none'])]\
 end."
