@@ -50,7 +50,7 @@
       <Cell title="CPU Frequency">
         {{
           data?.device?.cpuFreq
-            ? Math.round(data.device.cpuFreq / 1e8) / 10 + 'GHz'
+            ? Math.round(data.device.cpuFreq / 1e5) / 10 + 'GHz'
             : ''
         }}
       </Cell>

@@ -102,23 +102,23 @@ func GetWifiInfo() (map[string]interface{}, error) {
 }
 
 func GetCpuFreq() (interface{}, error) {
-	cmd := exec.Command("vcgencmd", "measure_clock", "arm")
+	cmd := exec.Command("cat", "/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq")
 	data, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
-	str := strings.Split(strings.ReplaceAll(string(data), "\n", ""), "=")[1]
+	str := strings.ReplaceAll(string(data), "\n", "")
 	return str, nil
 }
 
 func GetCpuTemp() (string, error) {
-	cmd := exec.Command("vcgencmd", "measure_temp")
+	cmd := exec.Command("cat", "/sys/class/thermal/thermal_zone0/temp")
 	data, err := cmd.Output()
 	if err != nil {
 		return "", err
 	}
-
-	str := strings.Split(strings.ReplaceAll(string(data), "\n", ""), "=")[1]
+	dataStr := string(data)
+	str := dataStr[:len(dataStr)-4] + "." + dataStr[len(dataStr)-4:len(dataStr)-3] + "'C"
 	return str, nil
 }
 
