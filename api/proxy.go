@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +21,7 @@ func gitProxyGet(c *gin.Context) {
 		p, err = ctrl.ReleaseFileProxy(conf.GitRepoDir)
 	}
 	if err != nil {
+		fmt.Println(err)
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 	} else {
 		c.JSON(200, RespOK(p))

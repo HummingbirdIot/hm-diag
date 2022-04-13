@@ -84,12 +84,14 @@ func (c *UplinkConn) Connected() bool {
 	return c.connected
 }
 
+//ws连接
 func (c *UplinkConn) connect(ctx context.Context) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-
+	fmt.Println("ws server: " + c.config.server)
 	wsConn, resp, err := websocket.DefaultDialer.Dial(c.config.server, c.config.header)
 	if err != nil {
+		fmt.Println("connect ws server error: ", err)
 		c.httpResp = resp
 		c.connectErr = err
 		return errors.WithMessage(err, "dial connection")
@@ -106,9 +108,11 @@ func (c *UplinkConn) connect(ctx context.Context) error {
 	c.ws = wsConn
 	go c.keepPing(ctx)
 	go c.onConnectHandler(ctx)
+
 	return nil
 }
 
+//ping
 func (c *UplinkConn) keepPing(ctx context.Context) {
 	// Keep connection alive
 	log.Println("ws connection keep ping start")
@@ -127,10 +131,14 @@ func (c *UplinkConn) keepPing(ctx context.Context) {
 		if err != nil {
 			log.Println("ws connection ping error", err)
 			c.ws.Close()
+			if c.config.autoReconnect {
+				c.reconnect(ctx)
+			}
 		}
 	}
 }
 
+//ws关闭时处理函数
 func (c *UplinkConn) wsCloseHandler(ctx context.Context, code int, text string) error {
 	log.Printf("ws closed, code: %d, text: %s", code, text)
 	c.mu.Lock()
@@ -145,6 +153,7 @@ func (c *UplinkConn) wsCloseHandler(ctx context.Context, code int, text string) 
 	return nil
 }
 
+//ws重连
 func (c *UplinkConn) reconnect(ctx context.Context) error {
 	// TODO: reconnect
 	log.Println("reconnect...")

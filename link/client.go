@@ -25,8 +25,8 @@ func newClient(config ClientConfig) (*Client, error) {
 }
 
 func (c *Client) Start(ctx context.Context) error {
-	if c.config.Auth == "" || c.config.Server == "" {
-		return fmt.Errorf("auth and server must be provided")
+	if c.config.Secret == "" || c.config.Server == "" {
+		return fmt.Errorf("secret and server must be provided")
 	}
 
 	if c.conn != nil {
@@ -35,14 +35,14 @@ func (c *Client) Start(ctx context.Context) error {
 
 	conn, err := NewConn(ConnConfig{
 		header: map[string][]string{
-			SECURITY_KEY_HEADER: {c.config.Auth},
+			SECURITY_KEY_HEADER: {c.config.Secret},
 			SECURITY_ID:         {c.config.ID},
 		},
 		server:        c.config.Server,
 		autoReconnect: true,
 	})
 	if err != nil {
-		return errors.WithMessage(err, "client start")
+		return errors.WithMessage(err, "NewConn start")
 	}
 
 	conn.SetConnectHandler(c.onConnectHandler)
@@ -59,7 +59,7 @@ func (c *Client) WriteMessage(msg interface{}) error {
 	if !c.conn.Connected() {
 		return fmt.Errorf("connection is not established")
 	}
-
+	fmt.Println(msg)
 	err := c.conn.WriteJSON(msg)
 	if err != nil {
 		log.Println("error writing message: ", err)

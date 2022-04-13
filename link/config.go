@@ -20,7 +20,7 @@ var (
 
 type ClientConfig struct {
 	ID     string `json:"id"`
-	Auth   string `json:"auth"`
+	Secret string `json:"secret"`
 	Server string `json:"server"`
 }
 

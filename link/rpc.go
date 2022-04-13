@@ -36,8 +36,8 @@ func requestLocal(mr *message.HttpRequest) (*message.HttpResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	body, err := io.ReadAll(resp.Body)
 
+	body, err := io.ReadAll(resp.Body)
 	resData := message.OfHttpResponse(
 		mr.Meta.MsgId,
 		message.HttpResponseData{
@@ -47,7 +47,7 @@ func requestLocal(mr *message.HttpRequest) (*message.HttpResponse, error) {
 			Body:          string(body),
 		})
 
-	return resData, nil
+	return resData, err
 }
 
 func LocalHost() string {

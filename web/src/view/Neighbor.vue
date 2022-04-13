@@ -163,6 +163,7 @@ watch(searchTxt, v => {
 })
 
 onMounted(async () => {
+  //2022.4.13，因为helium api的调用限制，先将height的显示都暂时取消
   api.blockHeight().then(h => {
     heliumHeight.value = h
   }).catch(err => {
