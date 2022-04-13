@@ -120,7 +120,7 @@ func (c *UplinkConn) keepPing(ctx context.Context) {
 		select {
 		case <-ctx.Done():
 			log.Println("kepp ping break case context done")
-			break
+			return
 		case <-time.After(30 * time.Second):
 		}
 
@@ -131,9 +131,6 @@ func (c *UplinkConn) keepPing(ctx context.Context) {
 		if err != nil {
 			log.Println("ws connection ping error", err)
 			c.ws.Close()
-			if c.config.autoReconnect {
-				c.reconnect(ctx)
-			}
 		}
 	}
 }
@@ -144,8 +141,17 @@ func (c *UplinkConn) wsCloseHandler(ctx context.Context, code int, text string) 
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.connected = false
+	preLinkCtxCancel()
+	preLinkCtxCancel = nil
 	if c.config.autoReconnect {
-		c.reconnect(ctx)
+		for {
+			time.Sleep(60 * time.Second)
+			err := c.reconnect(context.Background())
+			if err == nil {
+				fmt.Println("reconnect successful")
+				return nil
+			}
+		}
 	}
 	if c.onCloseHandler != nil {
 		c.onCloseHandler(code, text)
@@ -157,6 +163,6 @@ func (c *UplinkConn) wsCloseHandler(ctx context.Context, code int, text string) 
 func (c *UplinkConn) reconnect(ctx context.Context) error {
 	// TODO: reconnect
 	log.Println("reconnect...")
-	err := c.connect(ctx)
+	err := Start(ctx)
 	return err
 }

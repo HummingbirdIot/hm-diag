@@ -84,6 +84,16 @@ func (c *Client) read(ctx context.Context) {
 		_, buf, err := c.conn.ReadMessage()
 		if err != nil {
 			log.Println("error reading message: ", err)
+			c.conn.wsCloseHandler(ctx, 1006, err.Error())
+			// preLinkCtxCancel()
+			// for {
+			// 	time.Sleep(30 * time.Second)
+			// 	err := c.conn.reconnect(ctx)
+			// 	if err == nil {
+			// 		return
+			// 	}
+			// 	fmt.Println("reconnect error: ", err)
+			// }
 			break
 		} else {
 			log.Println("go ws message:", string(buf))
