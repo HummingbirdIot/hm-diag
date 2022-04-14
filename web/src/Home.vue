@@ -12,13 +12,13 @@
       <Cell title="Helium Address" @click="openHeliumExplorer">
         <a v-if="heliumAddr != ''" href="#">View on Explore</a>
       </Cell>
-      <!-- <Cell>
+      <Cell>
         <template #title>
           Height Status
           <Icon name="question-o" @click="blockHeightTip"></Icon>
         </template>
         {{ data?.miner?.infoSummary?.height }} / {{ heliumHeight }}
-      </Cell> -->
+      </Cell>
       <Cell title="Miner Version">{{ data?.miner?.infoSummary?.version }}</Cell>
       <Cell title="Firmware Version">{{ firmwareVersion }}</Cell>
       <Cell title="Region Plan">{{ region }}</Cell>
@@ -153,7 +153,7 @@ function fillData(data) {
 }
 
 function fetchBlockHeight() {
-  api.blockHeight()
+  api.fetchHeliumHeight()
     .then(r => {
       heliumHeight.value = r
     }).catch(err => {

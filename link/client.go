@@ -59,10 +59,13 @@ func (c *Client) WriteMessage(msg interface{}) error {
 	if !c.conn.Connected() {
 		return fmt.Errorf("connection is not established")
 	}
-	fmt.Println(msg)
+	c.conn.mu.Lock()
 	err := c.conn.WriteJSON(msg)
+	c.conn.mu.Unlock()
 	if err != nil {
 		log.Println("error writing message: ", err)
+		fmt.Println(msg)
+		return err
 	}
 	return nil
 }
@@ -85,18 +88,9 @@ func (c *Client) read(ctx context.Context) {
 		if err != nil {
 			log.Println("error reading message: ", err)
 			c.conn.wsCloseHandler(ctx, 1006, err.Error())
-			// preLinkCtxCancel()
-			// for {
-			// 	time.Sleep(30 * time.Second)
-			// 	err := c.conn.reconnect(ctx)
-			// 	if err == nil {
-			// 		return
-			// 	}
-			// 	fmt.Println("reconnect error: ", err)
-			// }
 			break
 		} else {
-			log.Println("go ws message:", string(buf))
+			// log.Println("go ws message:", string(buf))
 			var msg map[string]interface{}
 			err := json.Unmarshal(buf, &msg)
 			if err != nil {
@@ -129,7 +123,7 @@ func (c *Client) handleMessage(msg *map[string]interface{}, rawBuf []byte) {
 }
 
 func (c *Client) handleRpcRequest(r *message.HttpRequest) {
-	log.Printf("handle message: %#v", r)
+	// log.Printf("handle message: %#v", r)
 	resp, err := requestLocal(r)
 	if err != nil {
 		log.Printf("do request error: %v", err)
