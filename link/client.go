@@ -46,12 +46,13 @@ func (c *Client) Start(ctx context.Context) error {
 	}
 
 	conn.SetConnectHandler(c.onConnectHandler)
+	conn.SetReadMessageHandler(c.read)
 	c.conn = conn
 	err = c.conn.Start(ctx)
 	if err != nil {
 		return errors.WithMessage(err, "client start")
 	}
-	go c.read(ctx)
+	go c.conn.keepPing(ctx)
 	return nil
 }
 
@@ -60,8 +61,8 @@ func (c *Client) WriteMessage(msg interface{}) error {
 		return fmt.Errorf("connection is not established")
 	}
 	c.conn.mu.Lock()
+	defer c.conn.mu.Unlock()
 	err := c.conn.WriteJSON(msg)
-	c.conn.mu.Unlock()
 	if err != nil {
 		log.Println("error writing message: ", err)
 		fmt.Println(msg)
@@ -87,7 +88,7 @@ func (c *Client) read(ctx context.Context) {
 		_, buf, err := c.conn.ReadMessage()
 		if err != nil {
 			log.Println("error reading message: ", err)
-			c.conn.wsCloseHandler(ctx, 1006, err.Error())
+			// c.conn.wsCloseHandler(ctx, 1006, err.Error())
 			break
 		} else {
 			// log.Println("go ws message:", string(buf))
