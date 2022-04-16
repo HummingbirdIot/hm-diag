@@ -1,6 +1,8 @@
 package api
 
 import (
+	"bytes"
+	"context"
 	"embed"
 	"encoding/json"
 	"io/fs"
@@ -10,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag"
+	"xdt.com/hm-diag/link"
 	"xdt.com/hm-diag/regist"
 	"xdt.com/hm-diag/util"
 )
@@ -18,6 +21,11 @@ type RespBody struct {
 	Data    interface{} `json:"data"`
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
+}
+
+type ClientConfigBody struct {
+	Secret string `json:"secret"`
+	Server string `json:"server"`
 }
 
 func RespOK(data interface{}) RespBody {
@@ -234,6 +242,7 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	r.GET("/state", stateHandler)
 	r.GET("/inner/registInfo", registInfoHandler)
 	r.GET("/inner/api/v1/pktfwd/state", pktfwdVersion)
+	r.POST("/inner/api/v1/clientConfig/safe", saveClientConfigHandle)
 }
 
 func stateHandler(c *gin.Context) {
@@ -258,6 +267,41 @@ func registInfoHandler(c *gin.Context) {
 	} else {
 		c.JSON(200, RespOK(d))
 	}
+}
+
+func saveClientConfigHandle(c *gin.Context) {
+	var conf ClientConfigBody
+	err := json.NewDecoder(c.Request.Body).Decode(&conf)
+	if err != nil {
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(c.Request.Body)
+		log.Println("body: ", buf.String())
+		c.JSON(400, RespBody{Code: 400, Message: "invalid request body for config"})
+		return
+	}
+	exitConfig, err := link.GetClientConfig()
+	var newConfig link.ClientConfig
+	newConfig.ID = exitConfig.ID
+	newConfig.Secret = conf.Secret
+	newConfig.Server = conf.Server
+	log.Printf("to save clent config file, content: %#v", conf)
+	err = link.SaveClientConfig(newConfig)
+	if err != nil {
+		log.Println("save clent config file error:", err)
+		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+		return
+	}
+	log.Printf("saved client config file, content: %#v", conf)
+	log.Printf("to reconnect link server: %#v", conf.Server)
+	err = link.Start(context.Background())
+	if err != nil {
+		log.Println("reconnect link error : ", err)
+		c.JSON(500, RespBody{Code: 500, Message: "save client config successful, but reconnect error : " + err.Error()})
+		return
+	}
+	log.Printf("reconnected link server: %#v", conf.Server)
+	c.JSON(200, RespOK(nil))
+	log.Println("clientconfig end")
 }
 
 func saveConfigHandle(c *gin.Context) {

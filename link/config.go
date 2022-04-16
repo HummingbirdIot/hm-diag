@@ -50,6 +50,10 @@ func SaveClientConfig(c ClientConfig) error {
 	if err != nil {
 		return defaultErr
 	}
+	var conf ClientConfig
+	json.Unmarshal(buf, &conf)
+	log.Println("set client config cache, content : ", conf)
+	clientConfig = &conf
 	return nil
 }
 
