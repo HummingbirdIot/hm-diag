@@ -1,12 +1,15 @@
 package diag
 
 import (
+	"encoding/json"
 	"log"
 	"time"
 
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag/device"
 	"xdt.com/hm-diag/diag/miner"
+	"xdt.com/hm-diag/link"
+	"xdt.com/hm-diag/link/message"
 )
 
 type TaskConfig struct {
@@ -106,6 +109,29 @@ func (t *Task) Do() {
 	t.data = resMap
 	t.time = time.Now()
 
+	if link.SingleClientConnected() {
+		v, _ := miner.PacketForwardVersion()
+		config, _ := link.GetClientConfig()
+		var res map[string]interface{}
+		res = t.Data().Data
+		res["time"] = t.Data().FetchTime
+		res["version"] = v
+		buf, err := json.Marshal(res)
+		if err != nil {
+			log.Println("Marshal task data error: ", err)
+		}
+		client := link.GetSingleClient()
+		err = client.WriteMessage(message.OfHttpResponse(
+			config.ID+"/hotspotInfoCache",
+			message.HttpResponseData{
+				Body: string(buf),
+			}))
+		if err != nil {
+			log.Println("WriteMessage error: ", err)
+		}
+	} else {
+		log.Println("ws client not Connected")
+	}
 	log.Println("task done")
 }
 

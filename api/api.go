@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag"
+	"xdt.com/hm-diag/diag/miner"
 	"xdt.com/hm-diag/link"
 	"xdt.com/hm-diag/regist"
 	"xdt.com/hm-diag/util"
@@ -246,14 +247,21 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 }
 
 func stateHandler(c *gin.Context) {
+	v, err := miner.PacketForwardVersion()
+	if err != nil {
+		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+		return
+	}
 	var res map[string]interface{}
 	if c := c.Query("cache"); c == "true" {
 		res = diagTask.Data().Data
 		res["time"] = diagTask.Data().FetchTime
+		res["version"] = v
 	} else {
 		res = map[string]interface{}{
-			"device": diagTask.FetchDeviceInfo(),
-			"miner":  diagTask.FetchMinerInfo(),
+			"device":  diagTask.FetchDeviceInfo(),
+			"miner":   diagTask.FetchMinerInfo(),
+			"version": v,
 		}
 	}
 	res["notice"] = `do not use this api path "/" to integrate, use api under path "api/"`

@@ -39,6 +39,14 @@ func Start(rootCtx context.Context) error {
 	return nil
 }
 
+func SingleClientConnected() bool {
+	return singleClient.conn.connected
+}
+
+func GetSingleClient() *Client {
+	return singleClient
+}
+
 func ReportData(data any) error {
 	singleClient.WriteMessage(data)
 	return nil
