@@ -1,6 +1,7 @@
 package device
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"net"
@@ -222,4 +223,20 @@ func QueryMinerLog(filterTxt string, maxLines uint) (string, error) {
 		return "", err
 	}
 	return string(out), nil
+}
+
+func NetworkTest(ip string) error {
+	cmd := exec.Command("ping", ip, "-c", "3")
+	var out bytes.Buffer
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	cmd.Stdout = &out
+	err := cmd.Run()
+	log.Println("cmd out: ", out.String())
+	if err != nil {
+		log.Println("network error : ", err.Error(), stderr.String())
+		return fmt.Errorf(stderr.String())
+	}
+	log.Println("network ok")
+	return nil
 }

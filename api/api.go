@@ -12,6 +12,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag"
+	"xdt.com/hm-diag/diag/device"
 	"xdt.com/hm-diag/diag/miner"
 	"xdt.com/hm-diag/link"
 	"xdt.com/hm-diag/regist"
@@ -244,6 +245,8 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	r.GET("/inner/registInfo", registInfoHandler)
 	r.GET("/inner/api/v1/pktfwd/state", pktfwdVersion)
 	r.POST("/inner/api/v1/clientConfig/safe", saveClientConfigHandle)
+
+	r.GET("/inner/api/v1/network", networkTestHandler)
 }
 
 func stateHandler(c *gin.Context) {
@@ -356,4 +359,14 @@ func isViaPrivate(c *gin.Context) {
 	}
 	r := util.IsPrivateIp(rIp)
 	c.JSON(200, RespOK(r))
+}
+
+func networkTestHandler(c *gin.Context) {
+	d := c.Query("ip")
+	err := device.NetworkTest(d)
+	if err != nil {
+		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+		return
+	}
+	c.JSON(200, RespOK(nil))
 }
