@@ -46,13 +46,11 @@ func (c *Client) Start(ctx context.Context) error {
 	}
 
 	conn.SetConnectHandler(c.onConnectHandler)
-	conn.SetReadMessageHandler(c.read)
 	c.conn = conn
 	err = c.conn.Start(ctx)
 	if err != nil {
 		return errors.WithMessage(err, "client start")
 	}
-	go c.conn.keepPing(ctx)
 	return nil
 }
 
@@ -135,5 +133,6 @@ func (c *Client) handleRpcRequest(r *message.HttpRequest) {
 
 func (c *Client) onConnectHandler(ctx context.Context) error {
 	log.Println("in client onConnectHandler")
+	go c.read(ctx)
 	return nil
 }

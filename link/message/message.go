@@ -3,8 +3,6 @@ package message
 import (
 	"fmt"
 	"net/http"
-
-	"github.com/google/uuid"
 )
 
 const DEFAULT_CONTENT_TYPE = "application/json"
@@ -64,10 +62,10 @@ type HttpResponseData struct {
 	Body          string      `json:"body"`
 }
 
-func OfReportData(d any) *ReportData {
+func OfReportData(msgId string, d any) *ReportData {
 	return &ReportData{
 		Meta: Meta{
-			MsgId:       uuid.NewString(),
+			MsgId:       msgId,
 			ContentType: DEFAULT_CONTENT_TYPE,
 			Header: map[string]string{
 				TYPE_HEADER:      TYPE_REPORT_DATA,
@@ -97,7 +95,7 @@ func OfHttpResponse(msgId string, d HttpResponseData) *HttpResponse {
 			MsgId:       msgId,
 			ContentType: DEFAULT_CONTENT_TYPE,
 			Header: map[string]string{
-				TYPE_HEADER: TYPE_HTTP_REQUEST,
+				TYPE_HEADER: TYPE_HTTP_RESPONSE,
 			},
 		},
 		Data: d,

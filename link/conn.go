@@ -21,7 +21,6 @@ var (
 
 type Closehandler func(code int, text string) error
 type Connecthandler func(ctx context.Context) error
-type ReadMessageHandler func(ctx context.Context)
 type UplinkConn struct {
 	mu               sync.RWMutex
 	config           ConnConfig
@@ -31,7 +30,6 @@ type UplinkConn struct {
 	connected        bool
 	onCloseHandler   Closehandler
 	onConnectHandler Connecthandler
-	onReadHandler    ReadMessageHandler
 }
 
 type ConnConfig struct {
@@ -53,7 +51,13 @@ func NewConn(conf ConnConfig) (*UplinkConn, error) {
 }
 
 func (c *UplinkConn) Start(ctx context.Context) error {
-	return c.connect(ctx)
+	err := c.connect(ctx)
+	if err != nil {
+		return err
+	}
+	go c.keepPing(ctx)
+	return nil
+
 }
 
 func (c *UplinkConn) Close() {
@@ -72,10 +76,6 @@ func (c *UplinkConn) SetCloseHandler(h Closehandler) {
 
 func (c *UplinkConn) SetConnectHandler(h Connecthandler) {
 	c.onConnectHandler = h
-}
-
-func (c *UplinkConn) SetReadMessageHandler(h ReadMessageHandler) {
-	c.onReadHandler = h
 }
 
 func (c *UplinkConn) WriteJSON(v interface{}) error {
@@ -118,11 +118,9 @@ func (c *UplinkConn) connect(ctx context.Context) error {
 
 	c.connected = true
 	c.ws = wsConn
-	childCtx, childCtxCancel := context.WithCancel(ctx)
-	connCtx, connCtxCancel = childCtx, childCtxCancel
+	connCtx, connCtxCancel = context.WithCancel(ctx)
 	//connect 函数内的协程都有connCtx管理，属于ctx下的context（context销毁时子context也会销毁）
-	go c.onConnectHandler(childCtx)
-	go c.onReadHandler(childCtx)
+	go c.onConnectHandler(connCtx)
 	return nil
 }
 

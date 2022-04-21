@@ -106,6 +106,7 @@ func main() {
 		os.Stdout.WriteString(string(s))
 		return
 	} else if flag.Arg(0) == "server" || flag.Arg(0) == "" {
+		link.InitClientConfig()
 		optJson, _ := json.Marshal(opt)
 		log.Println("options: ", string(optJson))
 

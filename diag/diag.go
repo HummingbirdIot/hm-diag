@@ -109,25 +109,20 @@ func (t *Task) Do() {
 	t.data = resMap
 	t.time = time.Now()
 
-	if link.SingleClientConnected() {
+	if link.Connected() {
 		v, _ := miner.PacketForwardVersion()
 		config, _ := link.GetClientConfig()
 		var res map[string]interface{}
 		res = t.Data().Data
 		res["time"] = t.Data().FetchTime
-		res["version"] = v
+		res["packetForwardVersion"] = v
 		buf, err := json.Marshal(res)
 		if err != nil {
 			log.Println("Marshal task data error: ", err)
 		}
-		client := link.GetSingleClient()
-		err = client.WriteMessage(message.OfHttpResponse(
-			config.ID+"/hotspotInfoCache",
-			message.HttpResponseData{
-				Body: string(buf),
-			}))
+		err = link.ReportData(message.OfReportData(config.ID+"/hotspotInfoCache", string(buf)))
 		if err != nil {
-			log.Println("WriteMessage error: ", err)
+			log.Println("ReportData error: ", err)
 		}
 	} else {
 		log.Println("ws client not Connected")

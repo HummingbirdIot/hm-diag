@@ -58,7 +58,7 @@ export async function logQuery(params) {
 }
 
 export async function networkTest(ip) {
-  return await http.get("/inner/api/v1/network?ip=" + ip);
+  return await http.get("/inner/api/v1/network/ping?ip=" + ip);
 }
 
 // miner

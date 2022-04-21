@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"xdt.com/hm-diag/config"
+	"xdt.com/hm-diag/diag/miner"
 )
 
 const (
@@ -24,8 +27,9 @@ type ClientConfig struct {
 	Server string `json:"server"`
 }
 
-func init() {
+func InitClientConfig() {
 	c, err := loadClientConfig()
+	log.Println("client config : ", c)
 	if err != nil {
 		log.Println("load client config error", err)
 	} else {
@@ -68,6 +72,17 @@ func loadClientConfig() (*ClientConfig, error) {
 	err = json.NewDecoder(f).Decode(&conf)
 	if err != nil {
 		errors.WithMessage(err, "client config content format")
+	}
+
+	if conf.ID == "" {
+		log.Println("client config file not have ID")
+		m := miner.FetchData(config.Config().MinerUrl)
+		if addr, ok := m["peerAddr"].(string); ok {
+			conf.ID = strings.Split(addr, "/")[2]
+		} else {
+			conf.ID = uuid.NewString()
+		}
+		log.Println("set client config file not have ID: ", conf.ID)
 	}
 
 	return &conf, nil

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"bytes"
 	"context"
 	"embed"
 	"encoding/json"
@@ -236,7 +235,7 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	//
 	// Responses:
 	//   200:AllState
-	r.GET("/inner/state", stateHandler)
+	r.GET("/inner/state", stateInnerHandler)
 
 	r.GET("/inner/api/v1/version", versionHandler)
 
@@ -246,10 +245,10 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	r.GET("/inner/api/v1/pktfwd/state", pktfwdVersion)
 	r.POST("/inner/api/v1/clientConfig/safe", saveClientConfigHandle)
 
-	r.GET("/inner/api/v1/network", networkTestHandler)
+	r.GET("/inner/api/v1/network/ping", networkTestHandler)
 }
 
-func stateHandler(c *gin.Context) {
+func stateInnerHandler(c *gin.Context) {
 	v, err := miner.PacketForwardVersion()
 	if err != nil {
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
@@ -259,12 +258,27 @@ func stateHandler(c *gin.Context) {
 	if c := c.Query("cache"); c == "true" {
 		res = diagTask.Data().Data
 		res["time"] = diagTask.Data().FetchTime
-		res["version"] = v
+		res["packetForwardVersion"] = v
 	} else {
 		res = map[string]interface{}{
-			"device":  diagTask.FetchDeviceInfo(),
-			"miner":   diagTask.FetchMinerInfo(),
-			"version": v,
+			"device":               diagTask.FetchDeviceInfo(),
+			"miner":                diagTask.FetchMinerInfo(),
+			"packetForwardVersion": v,
+		}
+	}
+	res["notice"] = `do not use this api path "/" to integrate, use api under path "api/"`
+	c.JSON(200, RespOK(res))
+}
+
+func stateHandler(c *gin.Context) {
+	var res map[string]interface{}
+	if c := c.Query("cache"); c == "true" {
+		res = diagTask.Data().Data
+		res["time"] = diagTask.Data().FetchTime
+	} else {
+		res = map[string]interface{}{
+			"device": diagTask.FetchDeviceInfo(),
+			"miner":  diagTask.FetchMinerInfo(),
 		}
 	}
 	res["notice"] = `do not use this api path "/" to integrate, use api under path "api/"`
@@ -284,15 +298,17 @@ func saveClientConfigHandle(c *gin.Context) {
 	var conf ClientConfigBody
 	err := json.NewDecoder(c.Request.Body).Decode(&conf)
 	if err != nil {
-		buf := new(bytes.Buffer)
-		buf.ReadFrom(c.Request.Body)
-		log.Println("body: ", buf.String())
 		c.JSON(400, RespBody{Code: 400, Message: "invalid request body for config"})
 		return
 	}
-	exitConfig, err := link.GetClientConfig()
+	existConfig, err := link.GetClientConfig()
+	if err != nil {
+		log.Println("get clientConfig error : ", err)
+		c.JSON(500, RespBody{Code: 500, Message: "get clientConfig error : " + err.Error()})
+		return
+	}
 	var newConfig link.ClientConfig
-	newConfig.ID = exitConfig.ID
+	newConfig.ID = existConfig.ID
 	newConfig.Secret = conf.Secret
 	newConfig.Server = conf.Server
 	log.Printf("to save clent config file, content: %#v", conf)
