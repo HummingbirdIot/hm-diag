@@ -298,10 +298,11 @@ func saveClientConfigHandle(c *gin.Context) {
 	var conf ClientConfigBody
 	err := json.NewDecoder(c.Request.Body).Decode(&conf)
 	if err != nil {
+		log.Println(err)
 		c.JSON(400, RespBody{Code: 400, Message: "invalid request body for config"})
 		return
 	}
-	existConfig, err := link.GetClientConfig()
+	existConfig, err := link.LoadClientConfig()
 	if err != nil {
 		log.Println("get clientConfig error : ", err)
 		c.JSON(500, RespBody{Code: 500, Message: "get clientConfig error : " + err.Error()})
@@ -318,7 +319,7 @@ func saveClientConfigHandle(c *gin.Context) {
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 		return
 	}
-	log.Printf("saved client config file, content: %#v", conf)
+	log.Printf("saved client config file, content: %#v", newConfig)
 	log.Printf("to reconnect link server: %#v", conf.Server)
 	err = link.Start(context.Background())
 	if err != nil {

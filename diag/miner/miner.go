@@ -128,6 +128,12 @@ func FetchData(url string) map[string]interface{} {
 	return resMap
 }
 
+func GetPeerAddr(url string) string {
+	client := &jsonrpc.Client{Url: url}
+	res, _ := client.Call("peer_addr", nil)
+	return res.(map[string]interface{})["peer_addr"].(string)
+}
+
 func FirmwareVersion() (string, error) {
 	cmd := exec.Command("cat", "/etc/lsb_release")
 	out, err := cmd.Output()

@@ -2,6 +2,7 @@ package link
 
 import (
 	"context"
+	"fmt"
 	"log"
 )
 
@@ -27,6 +28,9 @@ func Start(rootCtx context.Context) error {
 		linkLog(err)
 		return err
 	}
+	if conf == nil {
+		return fmt.Errorf("client config is nil")
+	}
 	singleClient.config = *conf
 
 	err = singleClient.Start(ctx)
@@ -40,6 +44,9 @@ func Start(rootCtx context.Context) error {
 }
 
 func Connected() bool {
+	if singleClient.conn == nil {
+		return false
+	}
 	return singleClient.conn.connected
 }
 

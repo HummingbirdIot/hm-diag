@@ -7,7 +7,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag/miner"
@@ -28,11 +27,11 @@ type ClientConfig struct {
 }
 
 func InitClientConfig() {
-	c, err := loadClientConfig()
-	log.Println("client config : ", c)
+	c, err := LoadClientConfig()
 	if err != nil {
 		log.Println("load client config error", err)
 	} else {
+		log.Println("load clieng config: ", c)
 		clientConfig = c
 	}
 }
@@ -61,12 +60,16 @@ func SaveClientConfig(c ClientConfig) error {
 	return nil
 }
 
-func loadClientConfig() (*ClientConfig, error) {
+func LoadClientConfig() (*ClientConfig, error) {
 	f, err := os.Open(configFilePath)
 	defaultErr := errors.WithMessage(err, "load client config")
 	if err != nil {
-		return nil, defaultErr
-
+		if os.IsNotExist(err) {
+			//配置文件不存在
+			log.Println("File config not exist")
+		} else {
+			return nil, defaultErr
+		}
 	}
 	var conf ClientConfig
 	err = json.NewDecoder(f).Decode(&conf)
@@ -76,13 +79,13 @@ func loadClientConfig() (*ClientConfig, error) {
 
 	if conf.ID == "" {
 		log.Println("client config file not have ID")
-		m := miner.FetchData(config.Config().MinerUrl)
-		if addr, ok := m["peerAddr"].(string); ok {
+		addr := miner.GetPeerAddr(config.Config().MinerUrl)
+		if addr != "" {
 			conf.ID = strings.Split(addr, "/")[2]
 		} else {
-			conf.ID = uuid.NewString()
+			return nil, fmt.Errorf("hotspot peerAddr is empty")
 		}
-		log.Println("set client config file not have ID: ", conf.ID)
+		log.Println("set client config file ID: ", conf.ID)
 	}
 
 	return &conf, nil

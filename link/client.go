@@ -26,7 +26,7 @@ func newClient(config ClientConfig) (*Client, error) {
 
 func (c *Client) Start(ctx context.Context) error {
 	if c.config.Secret == "" || c.config.Server == "" || c.config.ID == "" {
-		return fmt.Errorf("secret and server ad id must be provided")
+		return fmt.Errorf("secret and server and id must be provided")
 	}
 
 	if c.conn != nil {
