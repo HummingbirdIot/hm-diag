@@ -1,5 +1,19 @@
 import axios from "axios";
 import { Notify } from "vant";
+import { AuthToken, toLoginView } from "./auth.js"
+
+function getToken() {
+  const s = window.location.search;
+  let tk = "";
+  if (s.length > 1 && s.indexOf("tk") > 0) {
+    const f = s
+      .substring(1)
+      .split("&")
+      .find((i) => i.indexOf("tk=") === 0);
+    tk = f ? f.substring(3) : "";
+  }
+  return tk;
+}
 
 export function getBase() {
   const s = window.location.search;
@@ -20,25 +34,13 @@ export function getBase() {
   }
 }
 
-function getToken() {
-  const s = window.location.search;
-  let tk = "";
-  if (s.length > 1 && s.indexOf("tk") > 0) {
-    const f = s
-      .substring(1)
-      .split("&")
-      .find((i) => i.indexOf("tk=") === 0);
-    tk = f ? f.substring(3) : "";
-  }
-  return tk;
-}
-
 const client = axios.create({ baseURL: getBase() });
 
 client.interceptors.request.use(
   (req) => {
     Object.assign(req.headers, {
-      Authorization: getToken(),
+      "Hotspot-Authorization": AuthToken.get(),
+      "Authorization":getToken()
     });
     return req;
   },
@@ -53,14 +55,23 @@ client.interceptors.response.use(
       return res.data.data;
     } else {
       console.log("api error: ", res);
-      Notify(res.data.message);
+      const msg = res.data.message ? res.data.message : res.data
+      Notify(msg);
       throw res.data.message;
     }
   },
   (err) => {
     console.log("api error: ", err);
     const msg = err.response?.data?.message ? err.response.data.message : err.message ? err.message : err;
-    Notify(msg);
+    if (err.response?.status === 401) {
+      AuthToken.clean();
+      const resp = err.response;
+      toLoginView()
+    } else if (err?.response?.status === 700) {
+      Notify({ message: "wrong password" });
+    }  else {
+      Notify({ message: msg });
+    }
     throw msg;
   }
 );

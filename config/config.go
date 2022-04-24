@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"os"
 )
 
@@ -23,10 +24,12 @@ type GlobalConfig struct {
 	GitRepoDir    string
 	GitRepoUrl    string
 	PublicAccess  CONF_BOOL
+	Password      string
 }
 
 type ConfiFileData struct {
 	PublicAccess CONF_BOOL `json:"publicAccess"`
+	Password     string    `json:"password"`
 }
 
 const MAIN_SCRIPT = "./hummingbird_iot.sh"
@@ -49,6 +52,20 @@ func InitConf(cf GlobalConfig) {
 		} else {
 			conf.PublicAccess = confFile.PublicAccess
 		}
+
+		if confFile == nil || confFile.Password == "" {
+			inet, err := net.InterfaceByName("eth0")
+			if err != nil {
+				conf.Password = "Hiot@2022"
+				fmt.Printf("fail to get net interfaces: %v", err)
+			} else {
+				conf.Password = inet.HardwareAddr.String()
+			}
+		} else {
+			log.Println("set hotspot password from config.json , password: ", confFile.Password)
+			conf.Password = confFile.Password
+		}
+		log.Println("hotspot password: ", conf.Password)
 	}
 }
 
@@ -87,5 +104,6 @@ func SaveConfigFile(conf ConfiFileData) error {
 	}
 	// update live config
 	Config().PublicAccess = conf.PublicAccess
+	Config().Password = conf.Password
 	return nil
 }

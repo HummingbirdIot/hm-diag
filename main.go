@@ -120,7 +120,11 @@ func main() {
 
 		// http server
 		r := gin.Default()
-		r.Use(api.CORSMiddleware()).Use(api.PrivateAccessMiddle())
+		r.Use(
+			api.CORSMiddleware(),
+			api.AuthMiddleware(),
+			// api.PrivateAccessMiddle(),
+		)
 		api.Route(r, webFS, swagFS)
 		r.Run(fmt.Sprintf(":%d", opt.Port))
 	} else if flag.Arg(0) == "version" {

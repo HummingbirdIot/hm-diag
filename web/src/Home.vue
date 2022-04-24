@@ -60,7 +60,7 @@
           <Icon name="question-o" @click="cpuPercentTip"></Icon>
         </template>
         <template #value>
-          <span v-for="item in data?.device?.cpuPercent">{{ Math.round(item) }}%&nbsp;</span>
+          <span v-for="item in data?.device?.cpuPercent" :key="item">{{ Math.round(item) }}%&nbsp;</span>
         </template>
         <!-- <template #value>
             <Progress

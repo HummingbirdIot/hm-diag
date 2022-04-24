@@ -2,6 +2,7 @@ package api
 
 import (
 	"log"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"xdt.com/hm-diag/config"
@@ -14,11 +15,19 @@ var (
 	}
 )
 
+var WHITE_LIST = [...]string{
+	"/favicon.ico",
+	"/web",
+	"/api/v1/login",
+	"/inner/state",
+	"/api/v1/password",
+}
+
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Credentials", "true")
-		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Hotspot-Authorization, accept, origin, Cache-Control, X-Requested-With")
 		c.Header("Access-Control-Allow-Methods", "POST, HEAD, PATCH, OPTIONS, GET, PUT")
 
 		if c.Request.Method == "OPTIONS" {
@@ -63,5 +72,60 @@ func PrivateAccessMiddle() gin.HandlerFunc {
 		} else {
 			c.JSON(401, RespBody{Code: 401, Message: "can't access on public environment"})
 		}
+	}
+}
+
+func AuthMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if config.Config().PublicAccess == config.CONF_ON {
+			c.Next()
+			return
+		}
+
+		//信任地址或同ip免密
+		// canAccess := false
+		// rIp, ok := c.RemoteIP()
+		// if !ok {
+		// 	log.Printf("get remote ip for request: %s from %s", c.Request.URL, c.Request.RemoteAddr)
+		// 	canAccess = false
+		// } else if util.IsPrivateIp(rIp) {
+		// 	log.Printf("is private ip for request: %s ", c.Request.URL)
+		// 	canAccess = true
+		// }
+		// if canAccess {
+		// 	log.Println("canAccess")
+		// 	c.Next()
+		// 	return
+		// }
+
+		p := c.Request.URL.Path
+
+		//白名单免密
+		white := false
+		for _, w := range WHITE_LIST {
+			if strings.HasPrefix(p, w) {
+				white = true
+			}
+		}
+		if p == "/" {
+			white = true
+		}
+		if white {
+			c.Next()
+			return
+		}
+
+		//判断tk
+		tk := c.GetHeader("Hotspot-Authorization")
+		if tk == "" {
+			tk = c.Query("hotspot_tk")
+		}
+		err := ValidateToken(tk)
+		if err != nil {
+			c.JSON(401, RespBody{Code: 401, Message: err.Error()})
+			c.Abort()
+			return
+		}
+		c.Next()
 	}
 }

@@ -1,5 +1,9 @@
 import http from "./http";
 
+export async function login(sec) {
+  return await http.post("/api/v1/login", sec);
+}
+
 export async function stateGet() {
   return await http.get("/inner/state");
 }

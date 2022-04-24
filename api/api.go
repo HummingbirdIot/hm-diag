@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"encoding/json"
+	"io"
 	"io/fs"
 	"log"
 	"net/http"
@@ -22,6 +23,11 @@ type RespBody struct {
 	Data    interface{} `json:"data"`
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
+}
+
+type PasswordBody struct {
+	Password    string `json:"password"`
+	NewPassword string `json:"newPassword"`
 }
 
 type ClientConfigBody struct {
@@ -246,6 +252,8 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	r.POST("/inner/api/v1/clientConfig/safe", saveClientConfigHandle)
 
 	r.GET("/inner/api/v1/network/ping", networkTestHandler)
+	r.POST("/api/v1/login", loginHandler)
+	r.POST("/api/v1/password", passwordHandler)
 }
 
 func stateInnerHandler(c *gin.Context) {
@@ -329,7 +337,6 @@ func saveClientConfigHandle(c *gin.Context) {
 	}
 	log.Printf("reconnected link server: %#v", conf.Server)
 	c.JSON(200, RespOK(nil))
-	log.Println("clientconfig end")
 }
 
 func saveConfigHandle(c *gin.Context) {
@@ -386,4 +393,42 @@ func networkTestHandler(c *gin.Context) {
 		return
 	}
 	c.JSON(200, RespOK(nil))
+}
+
+func loginHandler(c *gin.Context) {
+	b, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.Writer.WriteHeader(500)
+		return
+	}
+	if config.Config().Password == string(b) {
+		c.JSON(200, RespOK(GenToken()))
+	} else {
+		c.Writer.WriteHeader(700)
+	}
+}
+
+func passwordHandler(c *gin.Context) {
+	var requestData PasswordBody
+	err := json.NewDecoder(c.Request.Body).Decode(&requestData)
+	if err != nil {
+		c.JSON(400, RespBody{Code: 400, Message: "invalid request body for password"})
+		return
+	}
+	confFile := config.Config()
+
+	if confFile.Password == requestData.Password {
+		var newConfig config.ConfiFileData
+		newConfig.Password = requestData.NewPassword
+		newConfig.PublicAccess = confFile.PublicAccess
+		err = config.SaveConfigFile(newConfig)
+		if err != nil {
+			log.Println("method SetPassword error:", err)
+			c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+			return
+		}
+		c.JSON(200, RespOK("ok"))
+	} else {
+		c.Writer.WriteHeader(700)
+	}
 }
