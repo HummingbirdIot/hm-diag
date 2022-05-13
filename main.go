@@ -17,7 +17,6 @@ import (
 	"xdt.com/hm-diag/devdis"
 	"xdt.com/hm-diag/diag"
 	"xdt.com/hm-diag/link"
-	"xdt.com/hm-diag/regist"
 	"xdt.com/hm-diag/util"
 )
 
@@ -111,7 +110,6 @@ func main() {
 
 		// init job
 		go diagTask.StartTaskJob(true)
-		go regist.StartRegistJob()
 		util.Sgo(devdis.Init, "init device discovery error")
 
 		// link

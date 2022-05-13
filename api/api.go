@@ -13,7 +13,6 @@ import (
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag"
 	"xdt.com/hm-diag/link"
-	"xdt.com/hm-diag/regist"
 	"xdt.com/hm-diag/util"
 )
 
@@ -33,13 +32,11 @@ func RespOK(data interface{}) RespBody {
 }
 
 var diagTask *diag.Task
-var register *regist.Register
 var webFS embed.FS
 
 func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	webFS = webFiles
 	diagTask = diag.TaskInstance()
-	register = regist.Instance()
 
 	// web static files
 	d, _ := fs.Sub(webFS, "web/release")
@@ -240,7 +237,6 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 
 	// TODO remove this route after next two version
 	r.GET("/state", stateHandler)
-	r.GET("/inner/registInfo", registInfoHandler)
 	r.GET("/inner/api/v1/pktfwd/state", pktfwdVersion)
 	r.POST("/inner/api/v1/clientConfig/safe", saveClientConfigHandle)
 }
@@ -258,15 +254,6 @@ func stateHandler(c *gin.Context) {
 	}
 	res["notice"] = `do not use this api path "/" to integrate, use api under path "api/"`
 	c.JSON(200, RespOK(res))
-}
-
-func registInfoHandler(c *gin.Context) {
-	d, err := register.GetRegistInfo()
-	if err != nil {
-		c.JSON(500, RespBody{Code: 500, Message: "error: " + err.Error()})
-	} else {
-		c.JSON(200, RespOK(d))
-	}
 }
 
 func saveClientConfigHandle(c *gin.Context) {
