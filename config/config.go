@@ -43,7 +43,18 @@ var conf *GlobalConfig
 
 func InitConf(cf GlobalConfig) {
 	conf = &cf
-	if cf.PublicAccess == CONF_DEFAULT {
+	loadConfigFile(conf)
+}
+
+func Config() *GlobalConfig {
+	if conf == nil {
+		panic("GlobalConfig is nil")
+	}
+	return conf
+}
+
+func loadConfigFile(cf *GlobalConfig) {
+	if cf.PublicAccess == CONF_DEFAULT || cf.PublicAccess == CONF_OFF {
 		confFile, err := ReadConfigFile()
 		log.Printf("read config file content: %#v", confFile)
 		if err != nil {
@@ -69,19 +80,12 @@ func InitConf(cf GlobalConfig) {
 	}
 }
 
-func Config() *GlobalConfig {
-	if conf == nil {
-		panic("GlobalConfig is nil")
-	}
-	return conf
-}
-
 func ReadConfigFile() (*ConfiFileData, error) {
 	f, err := os.Open(CONF_ETC_FILE)
 	if err != nil {
 		if os.IsNotExist(err) {
 			log.Println("conf file is not exist")
-			return &ConfiFileData{PublicAccess: CONF_DEFAULT}, nil
+			return &ConfiFileData{PublicAccess: CONF_ON}, nil
 		}
 		return nil, fmt.Errorf("can't open config file %s", CONF_ETC_FILE)
 	}
@@ -93,8 +97,8 @@ func ReadConfigFile() (*ConfiFileData, error) {
 	return &conf, nil
 }
 
-func SaveConfigFile(conf ConfiFileData) error {
-	buf, err := json.Marshal(conf)
+func SaveConfigFile(c ConfiFileData) error {
+	buf, err := json.Marshal(c)
 	if err != nil {
 		return err
 	}
@@ -103,7 +107,8 @@ func SaveConfigFile(conf ConfiFileData) error {
 		return err
 	}
 	// update live config
-	Config().PublicAccess = conf.PublicAccess
-	Config().Password = conf.Password
+	Config().PublicAccess = c.PublicAccess
+	Config().Password = c.Password
+	loadConfigFile(conf)
 	return nil
 }

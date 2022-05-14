@@ -151,6 +151,7 @@ function fetchData() {
   api.stateGet()
     .then(r => {
       Toast.clear()
+      localStorage.setItem("macPath",r?.device?.netInterface?.find(i => i.name == 'eth0')?.hardwareAddr)
       Object.assign(data, r)
       fillData(data)
     })

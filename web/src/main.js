@@ -29,6 +29,7 @@ import "./style/common.less";
 import "./style/index.less";
 import { initDateFormat } from "./util/time";
 import { AuthToken, setRouter } from './api/auth';
+import * as api from './api'
 
 const routes = [
   { path: "/login", component: Login },
@@ -64,8 +65,15 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
-  if (AuthToken.get() || window.location.pathname.indexOf("hotspot_tk") == 0) {
+router.beforeEach(async (to, from, next) => {
+  let configStr = localStorage.config
+  let config = {};
+  if( configStr ){
+    config = JSON.parse(configStr)
+  }else{
+    config = await api.configGet()
+  }
+  if (config.publicAccess == 1 || config.publicAccess == 0 || AuthToken.get() || window.location.pathname.indexOf("hotspot_tk") == 0) {
     const defaultPage = "/";
     if (to.path === "/login") {
       next({ path: defaultPage });

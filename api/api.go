@@ -351,7 +351,10 @@ func getConfigHandle(c *gin.Context) {
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 		return
 	}
-	c.JSON(200, RespOK(conf))
+
+	var res = make(map[string]interface{})
+	res["publicAccess"] = conf.PublicAccess
+	c.JSON(200, RespOK(res))
 }
 
 func versionHandler(c *gin.Context) {

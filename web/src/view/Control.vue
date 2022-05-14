@@ -61,11 +61,11 @@
       title="Onboarding" is-link to="/onboarding"></Cell>
   </CellGroup>
 
-  <!-- <CellGroup title="Safe" v-if="store.getters.canAccessImportant">
-    <Cell title="Access via Public IP">
-      <Switch size="small" v-model="accessViaPublicIP" @click="saveSafeConf"/>
+  <CellGroup title="Safe">
+    <Cell title="Dashboard Password">
+      <Switch size="small" v-model="dashboardPassword" @click="saveSafeConf"/>
     </Cell>
-  </CellGroup> -->
+  </CellGroup>
   <br />
   <br />
   <br />
@@ -78,6 +78,7 @@ import * as axios from "axios"
 import * as api from "../api/backend"
 import * as errors from "../util/errors"
 import { useStore } from 'vuex'
+import { toLoginView,AuthToken } from "../api/auth"
 
 const store = useStore()
 
@@ -87,7 +88,7 @@ const showProgress = ref(false)
 const progress = ref(0)
 const snapState = reactive({ state: "unknown", file: "", time: "not generated" })
 
-const accessViaPublicIP = ref(false)
+const dashboardPassword = ref(false)
 
 function reboot() {
   api.deviceReboot()
@@ -252,27 +253,35 @@ function doResetWorkspace() {
 function getSafeConf() {
   api.configGet()
     .then(r => {
-      accessViaPublicIP.value = r.publicAccess == 1 ? true : false
+      console.log(r)
+      dashboardPassword.value = r.publicAccess == 2 ? true : false
+      localStorage.setItem("config",JSON.stringify(r))
       store.commit("safeConf", r)
     })
 }
+
 function saveSafeConf() {
   Dialog.confirm({ 
     title: "Important !", 
-    message: "For safety, when disable \"Access via Public IP\"," 
-      + "server will only allow access some important operations via private IP, eg: Onboarding."
+    message:'when able "Dashboard Password",open the dashboard requires a password to log in,this potspot default password is '
+    + localStorage.macPath + '\nplease keep it safe'
+    // message: "For safety, when disable \"Access via Public IP\"," 
+    //   + "server will only allow access some important operations via private IP, eg: Onboarding."
   })
   .then(() => {
-    const v = accessViaPublicIP.value ? 1 : 2
+    const v = dashboardPassword.value ? 2 : 1
     api.configSet({PublicAccess: v})
       .then(r => {
         Notify({type:"success", message: "success"})
+        localStorage.setItem("config",JSON.stringify({publicAccess: v}))
+        AuthToken.clean()
+        toLoginView()
       })
       .catch(e=>{
       })
   })
   .catch(()=>{
-    accessViaPublicIP.value = !accessViaPublicIP.value
+    dashboardPassword.value = !dashboardPassword.value
   })
 }
 

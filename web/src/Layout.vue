@@ -53,13 +53,5 @@ function isShowNeighbors() {
 }
 isShowNeighbors()
 
-// function isShowTab() {
-//   if (window.location.href.indexOf('/login') != -1) {
-//     showTab.value = false
-//   }else{
-//     showTab.value = true
-//   }
-// }
-// isShowTab()
 </script>
 
