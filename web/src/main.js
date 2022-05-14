@@ -72,6 +72,7 @@ router.beforeEach(async (to, from, next) => {
     config = JSON.parse(configStr)
   }else{
     config = await api.configGet()
+    localStorage.setItem("config",JSON.stringify(config))
   }
   if (config.publicAccess == 1 || config.publicAccess == 0 || AuthToken.get() || window.location.pathname.indexOf("hotspot_tk") == 0) {
     const defaultPage = "/";
