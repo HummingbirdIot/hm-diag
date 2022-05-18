@@ -107,3 +107,11 @@ export async function snapState() {
 export function snapDownload(fileName) {
   open(`/inner/api/v1/miner/snapshot/file/${fileName}`, "_blank");
 }
+
+
+//onboarding
+
+export async function checkOnboarding() {
+  const api = "/inner/api/v1/onboarding";
+  return await http.get(api);
+}
