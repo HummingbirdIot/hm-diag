@@ -4,7 +4,6 @@
     <TabbarItem replace to="/" icon="home-o" active>Home</TabbarItem>
     <TabbarItem replace to="/setting" icon="setting-o">Setting</TabbarItem>
     <TabbarItem replace to="/control" icon="diamond-o">Control</TabbarItem>
-    <!-- <TabbarItem v-if="showNeighbor" replace to="/neighbor" icon="search">Neighbors</TabbarItem> -->
   </Tabbar>
 </template>
 
