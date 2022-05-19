@@ -84,7 +84,7 @@
         title="WLAN0 MAC"
       >{{ data?.device?.netInterface?.find(i => i.name == 'wlan0')?.hardwareAddr }}</Cell>
       
-      <Cell title="Network Test" is-link @click="newworkTest"></Cell>
+      <Cell title="Network Test" is-link to="/networkTest"></Cell>
       <Cell title="Log Query" is-link to="/logQuery"></Cell>
     </CellGroup>
     <br />
@@ -119,26 +119,6 @@ const version = reactive({})
 
 function openHeliumExplorer() {
   window.open(heliumAddr.value, '__blank')
-}
-
-function newworkTest(){
-  Toast.loading({
-    message: 'newtwork testing...',
-    forbidClick: true,
-    loadingType: 'spinner',
-    duration: 10 * 1000
-  });
-  api.networkTest("8.8.8.8")
-    .then(d => {
-      Toast.clear()
-      Toast.success('network is ok');
-      console.log(d)
-    })
-    .catch(err => {
-      Toast.clear()
-      console.error(err)
-      Dialog.alert({ message: "network test failed: " + errors.getMsg(err) })
-    })
 }
 
 function fetchData() {

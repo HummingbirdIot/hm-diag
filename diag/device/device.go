@@ -1,7 +1,6 @@
 package device
 
 import (
-	"bytes"
 	"fmt"
 	"log"
 	"net"
@@ -68,6 +67,13 @@ type DeviceInfo struct {
 	Mem          MemInfo            `json:"mem"`
 	NetInterface []NetInterfaceInfo `json:"netInterface"`
 	Wifi         WifiInfo           `json:"wifi"`
+}
+
+type NetworkTestInfo struct {
+	Name  string `json:"name"`
+	Addr  string `json:"addr"`
+	OK    bool   `json:"ok"`
+	Error string `json:"error"`
 }
 
 type LogType string
@@ -225,18 +231,46 @@ func QueryMinerLog(filterTxt string, maxLines uint) (string, error) {
 	return string(out), nil
 }
 
-func NetworkTest(ip string) error {
-	cmd := exec.Command("ping", ip, "-c", "3")
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	cmd.Stdout = &out
-	err := cmd.Run()
-	log.Println("cmd out: ", out.String())
+func NetworkTest() []NetworkTestInfo {
+	localAddr, err := util.IpByInterfaceName("eth0")
+	localTest := NetworkTestInfo{Name: "local", Addr: localAddr, OK: true}
 	if err != nil {
-		log.Println("network error : ", err.Error(), stderr.String())
-		return fmt.Errorf(stderr.String())
+		localTest.Error = err.Error()
+		localTest.OK = false
+		log.Println("get local ip error:", err)
 	}
-	log.Println("network ok")
-	return nil
+	err = util.PingTest(localAddr)
+	if err != nil {
+		localTest.Error = err.Error()
+		localTest.OK = false
+		log.Printf("ping local(%s) test error:,%s", localAddr, err)
+	}
+
+	gatewayTest := NetworkTestInfo{Name: "gateway", Addr: util.GatewayAddr, OK: true}
+	err = util.PingTest(util.GatewayAddr)
+	if err != nil {
+		gatewayTest.Error = err.Error()
+		gatewayTest.OK = false
+		log.Printf("ping gateway(%s) test error:,%s", util.GatewayAddr, err)
+	}
+
+	dnsAddr := "8.8.8.8"
+	dnsTest := NetworkTestInfo{Name: "dns", Addr: dnsAddr, OK: true}
+	err = util.PingTest(dnsAddr)
+	if err != nil {
+		dnsTest.Error = err.Error()
+		dnsTest.OK = false
+		log.Printf("ping dns(%s) test error:,%s", dnsAddr, err)
+	}
+
+	internetAddr := "baidu.com"
+	internetTest := NetworkTestInfo{Name: "internet", Addr: internetAddr, OK: true}
+	err = util.PingTest(internetAddr)
+	if err != nil {
+		internetTest.Error = err.Error()
+		internetTest.OK = false
+		log.Printf("ping dns(%s) test error:,%s", internetAddr, err)
+	}
+
+	return []NetworkTestInfo{localTest, gatewayTest, dnsTest, internetTest}
 }

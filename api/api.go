@@ -410,13 +410,8 @@ func isViaPrivate(c *gin.Context) {
 }
 
 func networkTestHandler(c *gin.Context) {
-	d := c.Query("ip")
-	err := device.NetworkTest(d)
-	if err != nil {
-		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
-		return
-	}
-	c.JSON(200, RespOK(nil))
+	testLog := device.NetworkTest()
+	c.JSON(200, RespOK(testLog))
 }
 
 func loginHandler(c *gin.Context) {
