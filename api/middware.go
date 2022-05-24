@@ -82,21 +82,33 @@ func AuthMiddleware() gin.HandlerFunc {
 			return
 		}
 
+		inPrivate := false
+		for _, p := range PrivateAccessPaths {
+			log.Println(p, c.Request.URL.Path)
+			if p == c.Request.URL.Path {
+				inPrivate = true
+				break
+			}
+		}
+		if !inPrivate {
+			c.Next()
+			return
+		}
+
 		//信任地址或同ip免密
-		// canAccess := false
-		// rIp, ok := c.RemoteIP()
-		// if !ok {
-		// 	log.Printf("get remote ip for request: %s from %s", c.Request.URL, c.Request.RemoteAddr)
-		// 	canAccess = false
-		// } else if util.IsPrivateIp(rIp) {
-		// 	log.Printf("is private ip for request: %s ", c.Request.URL)
-		// 	canAccess = true
-		// }
-		// if canAccess {
-		// 	log.Println("canAccess")
-		// 	c.Next()
-		// 	return
-		// }
+		canAccess := false
+		rIp, ok := c.RemoteIP()
+		if !ok {
+			log.Printf("get remote ip for request: %s from %s", c.Request.URL, c.Request.RemoteAddr)
+			canAccess = false
+		} else if util.IsPrivateIp(rIp) {
+			log.Printf("is private ip for request: %s ", c.Request.URL)
+			canAccess = true
+		}
+		if canAccess {
+			c.Next()
+			return
+		}
 
 		p := c.Request.URL.Path
 
