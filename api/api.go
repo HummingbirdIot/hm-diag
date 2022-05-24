@@ -388,6 +388,7 @@ func getConfigHandle(c *gin.Context) {
 
 	var res = make(map[string]interface{})
 	res["publicAccess"] = conf.PublicAccess
+	res["dashboardPassword"] = conf.DashboardPassword
 	c.JSON(200, RespOK(res))
 }
 

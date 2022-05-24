@@ -17,18 +17,15 @@ import { AuthToken } from "./api/auth"
 
 const store = useStore()
 const showNeighbor = ref(true)
-// const showTab = ref(true)
 
 onMounted(()=>{
-  if (AuthToken.get()){
-    api.stateGet().then(s=>{
-      store.commit('state', s)
-    }).catch(e=>{
-      console.error('init hotspot state data error: ', e)
-    })
-    localEnvJudge()
-    isViaPrivate()
-  }
+  api.stateGet().then(s=>{
+    store.commit('state', s)
+  }).catch(e=>{
+    console.error('init hotspot state data error: ', e)
+  })
+  localEnvJudge()
+  isViaPrivate()
 })
 
 function localEnvJudge() {

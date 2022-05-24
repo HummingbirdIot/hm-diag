@@ -77,11 +77,6 @@ func PrivateAccessMiddle() gin.HandlerFunc {
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if config.Config().PublicAccess == config.CONF_DEFAULT {
-			c.Next()
-			return
-		}
-
 		if config.Config().PublicAccess == config.CONF_ON {
 			c.Next()
 			return

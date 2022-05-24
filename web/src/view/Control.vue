@@ -61,9 +61,15 @@
       title="Onboarding" is-link to="/onboarding"></Cell>
   </CellGroup>
 
+  <!-- <CellGroup title="Safe" v-if="store.getters.canAccessImportant">
+    <Cell title="Access via Public IP">
+      <Switch size="small" v-model="accessViaPublicIP" @click="saveSafeConf"/>
+    </Cell>
+  </CellGroup> -->
+
   <CellGroup title="Safe">
     <Cell title="Dashboard Password">
-      <Switch size="small" v-model="dashboardPassword" @click="saveSafeConf"/>
+      <Switch size="small" v-model="dashboardPassword" @click="switchPassword"/>
     </Cell>
   </CellGroup>
   <br />
@@ -88,6 +94,7 @@ const showProgress = ref(false)
 const progress = ref(0)
 const snapState = reactive({ state: "unknown", file: "", time: "not generated" })
 
+const accessViaPublicIP = ref(false)
 const dashboardPassword = ref(false)
 
 function reboot() {
@@ -253,8 +260,8 @@ function doResetWorkspace() {
 function getSafeConf() {
   api.configGet()
     .then(r => {
-      console.log(r)
-      dashboardPassword.value = r.publicAccess == 2 ? true : false
+      accessViaPublicIP.value = r.publicAccess == 1 ? true : false
+      dashboardPassword.value = r.dashboardPassword
       localStorage.setItem("config",JSON.stringify(r))
       store.commit("safeConf", r)
     })
@@ -263,17 +270,34 @@ function getSafeConf() {
 function saveSafeConf() {
   Dialog.confirm({ 
     title: "Important !", 
-    message:'when able "Dashboard Password",open the dashboard requires a password to log in,this potspot default password is '
-    + localStorage.macPath + '\nplease keep it safe'
-    // message: "For safety, when disable \"Access via Public IP\"," 
-    //   + "server will only allow access some important operations via private IP, eg: Onboarding."
+    message: "For safety, when disable \"Access via Public IP\"," 
+      + "server will only allow access some important operations via private IP, eg: Onboarding."
   })
   .then(() => {
-    const v = dashboardPassword.value ? 2 : 1
+    const v = accessViaPublicIP.value ? 1 : 2
     api.configSet({PublicAccess: v})
       .then(r => {
         Notify({type:"success", message: "success"})
-        localStorage.setItem("config",JSON.stringify({publicAccess: v}))
+      })
+      .catch(e=>{
+      })
+  })
+  .catch(()=>{
+    accessViaPublicIP.value = !accessViaPublicIP.value
+  })
+}
+
+function switchPassword() {
+  Dialog.confirm({ 
+    title: "Important !", 
+    message:'when able "Dashboard Password",open the dashboard requires a password to log in,this potspot default password is '
+    + localStorage.macPath + '\nplease keep it safe'
+  })
+  .then(() => {
+    api.configSet({dashboardPassword: dashboardPassword.value})
+      .then(r => {
+        Notify({type:"success", message: "success"})
+        localStorage.setItem("config",JSON.stringify({dashboardPassword: dashboardPassword.value}))
         AuthToken.clean()
         toLoginView()
       })
@@ -281,7 +305,7 @@ function saveSafeConf() {
       })
   })
   .catch(()=>{
-    dashboardPassword.value = !dashboardPassword.value
+    accessViaPublicIP.value = !accessViaPublicIP.value
   })
 }
 
