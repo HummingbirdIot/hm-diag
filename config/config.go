@@ -65,7 +65,7 @@ func checkPassword(confFile *ConfiFileData) {
 		inet, err := net.InterfaceByName("eth0")
 		if err != nil {
 			conf.Password = "Hiot@2022"
-			fmt.Printf("fail to get net interfaces: %v", err)
+			fmt.Printf("fail to get net interfaces: %v\n", err)
 		} else {
 			conf.Password = inet.HardwareAddr.String()
 		}
