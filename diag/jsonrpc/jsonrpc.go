@@ -53,5 +53,6 @@ func (c Client) Call(method string, params interface{}) (result interface{}, err
 		log.Println("jsonrpc error: ", string(bodyStr), " jsonrpc call: ", c.Url, string(jsonBuf))
 		return nil, fmt.Errorf(bodyStr)
 	}
+
 	return res["result"], nil
 }
