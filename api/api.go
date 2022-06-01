@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+	"path"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -263,6 +264,8 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	r.GET("/inner/api/v1/network/ping", networkTestHandler)
 	r.POST("/api/v1/login", loginHandler)
 	r.POST("/api/v1/password", passwordHandler)
+
+	r.GET("/inner/api/v1/log/download", downloadLogFile)
 }
 
 func checkOnboarding(c *gin.Context) {
@@ -451,4 +454,20 @@ func passwordHandler(c *gin.Context) {
 	} else {
 		c.Writer.WriteHeader(700)
 	}
+}
+
+func downloadLogFile(c *gin.Context) {
+
+	filePath, err := packLogs()
+	log.Println(filePath)
+	if err != nil {
+		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+	}
+	//获取文件的名称
+	fileName := path.Base(filePath)
+	c.Header("Content-Type", "application/octet-stream")
+	c.Header("Content-Disposition", "attachment; url="+fileName)
+	c.Header("Content-Transfer-Encoding", "binary")
+	c.Header("Cache-Control", "no-cache")
+	c.File(filePath)
 }

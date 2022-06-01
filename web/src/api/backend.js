@@ -115,3 +115,8 @@ export async function checkOnboarding() {
   const api = "/inner/api/v1/onboarding";
   return await http.get(api);
 }
+
+//log
+export async function downloadLog() {
+  return await http.get("/inner/api/v1/log/download");
+}

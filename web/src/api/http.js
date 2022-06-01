@@ -51,9 +51,10 @@ client.interceptors.request.use(
 
 client.interceptors.response.use(
   (res) => {
-    if (res.data.code < 400) {
-      return res.data.data;
+    if (res.data.code < 400 || res.status==200) {
+      return res.data.data || res;
     } else {
+      console.log(res.data.code)
       console.log("api error: ", res);
       const msg = res.data.message ? res.data.message : res.data
       Notify(msg);
