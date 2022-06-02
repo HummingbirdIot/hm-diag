@@ -101,9 +101,9 @@ func logQuery(c *gin.Context) {
 	var l string
 	var err error
 	if logType == string(device.PWT_FWD_LOG) {
-		l, err = device.QueryPktfwdLog(since, until, filter)
+		l, err = diag.QueryPktfwdLog(since, until, filter)
 	} else {
-		l, err = device.QueryMinerLog(filter, maxLines)
+		l, err = diag.QueryMinerLog(filter, maxLines)
 	}
 	if err == nil {
 		c.JSON(200, RespOK(l))

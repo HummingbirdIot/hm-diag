@@ -458,7 +458,7 @@ func passwordHandler(c *gin.Context) {
 
 func downloadLogFile(c *gin.Context) {
 
-	filePath, err := packLogs()
+	filePath, err := diag.PackLogs()
 	log.Println(filePath)
 	if err != nil {
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})

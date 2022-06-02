@@ -1,7 +1,6 @@
 package device
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"os/exec"
@@ -9,7 +8,6 @@ import (
 	"time"
 
 	"github.com/godbus/dbus/v5"
-	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/util"
 
 	"github.com/shirou/gopsutil/v3/cpu"
@@ -79,11 +77,8 @@ type NetworkTestInfo struct {
 type LogType string
 
 const (
-	MINER_LOG         LogType = "minerLog"
-	PWT_FWD_LOG       LogType = "pktfwdLog"
-	DIAG_LOG_SCRIPT           = "journalctl -u hm-diag.service --since today"
-	HIOT_LOG_SCRIPT           = "journalctl -u hiot --since today"
-	DHCPCD_LOG_SCRIPT         = "journalctl -u dhcpcd.service -n 5000"
+	MINER_LOG   LogType = "minerLog"
+	PWT_FWD_LOG LogType = "pktfwdLog"
 )
 
 func GetWifiInfo() (map[string]interface{}, error) {
@@ -200,65 +195,6 @@ func GetAddrs(name string) (net.HardwareAddr, []string, error) {
 		ips[i] = addr.String()
 	}
 	return inet.HardwareAddr, ips, nil
-}
-
-func QueryPktfwdLog(since, until time.Time, filterTxt string) (string, error) {
-	queryCmd := config.MAIN_SCRIPT + " pktfwdLog"
-	cmdStr := fmt.Sprintf("%s %s %s %s",
-		queryCmd,
-		since.Format("'2006-01-02 15:04:05'"),
-		until.Format("'2006-01-02 15:04:05'"),
-		"'"+filterTxt+"'")
-	log.Println("exec cmd:", cmdStr)
-	cmd := exec.Command("bash", "-c", cmdStr)
-	cmd.Dir = config.Config().GitRepoDir
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
-}
-
-func QueryMinerLog(filterTxt string, maxLines uint) (string, error) {
-	queryCmd := config.MAIN_SCRIPT + " minerLog"
-	cmdStr := fmt.Sprintf("%s %s %d",
-		queryCmd,
-		"'"+filterTxt+"'", maxLines)
-	log.Println("exec cmd:", cmdStr)
-	cmd := exec.Command("bash", "-c", cmdStr)
-	cmd.Dir = config.Config().GitRepoDir
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
-}
-
-func QueryDiagLog() (string, error) {
-	cmd := exec.Command("bash", "-c", DIAG_LOG_SCRIPT)
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
-}
-
-func QueryHiotLog() (string, error) {
-	cmd := exec.Command("bash", "-c", HIOT_LOG_SCRIPT)
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
-}
-
-func QueryDhcpcdLog() (string, error) {
-	cmd := exec.Command("bash", "-c", DHCPCD_LOG_SCRIPT)
-	out, err := cmd.Output()
-	if err != nil {
-		return "", err
-	}
-	return string(out), nil
 }
 
 func NetworkTest() []NetworkTestInfo {

@@ -83,9 +83,15 @@
       <Cell
         title="WLAN0 MAC"
       >{{ data?.device?.netInterface?.find(i => i.name == 'wlan0')?.hardwareAddr }}</Cell>
-      
+
+    </CellGroup>
+
+    <CellGroup title=" ">
       <Cell title="Network Test" is-link to="/networkTest"></Cell>
       <Cell title="Log Query" is-link to="/logQuery"></Cell>
+      <Cell title="Download Log">
+        <Button size="small" type="primary" plain @click="downloadAllLog">Download</Button>
+      </Cell>
     </CellGroup>
     <br />
     <br />
@@ -104,6 +110,8 @@ import {
   Progress,
   Dialog,
   Icon,
+  Button,
+  Notify
 } from 'vant';
 import * as api from './api'
 import * as errors from './util/errors'
@@ -156,6 +164,27 @@ function fillData(data) {
     ?.replaceAll('"', '')
 }
 
+function downloadAllLog(){
+  Notify({ type: 'primary', message: 'Downloading, please wait patiently' });
+  api.downloadLog().then(res => {
+    let fileName = res.headers["content-disposition"].split("url=")[1];
+    console.log(fileName)
+    const blob = new Blob([res.data],{type: 'application/x-tar'});
+    const elink = document.createElement('a');
+    elink.download = fileName;
+    elink.style.display = 'none';
+    elink.href = URL.createObjectURL(blob);
+    document.body.appendChild(elink);
+    elink.click();
+    URL.revokeObjectURL(elink.href);// 释放URL 对象
+    document.body.removeChild(elink);
+    Notify({ type: "success", message: "Download log successful" })
+  }).catch(err=>{
+    console.error(err)
+    Notify({type: 'danger', message:"failed to download log:" + errors.getMsg(err)})
+  })
+}
+
 function fetchBlockHeight() {
   api.blockHeight()
   .then(r => {
@@ -163,7 +192,6 @@ function fetchBlockHeight() {
   }).catch(e => {
     api.blockHeightFromHelium()
       .then(r => {
-        console.log(r)
         heliumHeight.value = r
       }).catch(err => {
         Dialog.alert({ message: "Failed to load helium block height" });
@@ -184,7 +212,6 @@ function cpuPercentTip() {
 
 function checkHotspotOnboarding(){
   api.checkOnboarding().then(res => {
-    console.log(data)
     if(!res && !data?.miner?.infoSummary?.owner){
       Dialog.alert({ title:"Warning",message: "Hotspot is not onboarding" });
     }

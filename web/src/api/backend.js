@@ -118,5 +118,7 @@ export async function checkOnboarding() {
 
 //log
 export async function downloadLog() {
-  return await http.get("/inner/api/v1/log/download");
+  return await http.get("/inner/api/v1/log/download",{
+    responseType: 'blob'
+  });
 }

@@ -72,11 +72,6 @@
       <Switch size="small" v-model="dashboardPassword" @click="switchPassword"/>
     </Cell>
   </CellGroup>
-    <CellGroup title="Log">
-    <Cell title="Download Log">
-      <Button size="small" type="primary" plain @click="downloadAllLog">Download</Button>
-    </Cell>
-  </CellGroup>
   <br />
   <br />
   <br />
@@ -230,25 +225,6 @@ function resetWorkspace() {
     doResetWorkspace()
   }).catch(() => {
     // ignore
-  })
-}
-
-function downloadAllLog(){
-  api.downloadLog().then(res => {
-    let fileName = res.headers["content-disposition"].split("url=")[1];
-    const blob = new Blob([res.data]);
-    const elink = document.createElement('a');
-    elink.download = fileName;
-    elink.style.display = 'none';
-    elink.href = URL.createObjectURL(blob);
-    document.body.appendChild(elink);
-    elink.click();
-    URL.revokeObjectURL(elink.href);// 释放URL 对象
-    document.body.removeChild(elink);
-    Notify({ type: "success", message: "Download log successful" })
-  }).catch(err=>{
-    console.error(err)
-    Notify("failed to download log:" + errors.getMsg(err))
   })
 }
 
