@@ -259,7 +259,7 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	// TODO remove this route after next two version
 	r.GET("/state", stateHandler)
 	r.GET("/inner/api/v1/pktfwd/state", pktfwdVersion)
-	r.POST("/inner/api/v1/clientConfig/safe", saveClientConfigHandle)
+	r.POST("/inner/api/v1/clientConfig", saveClientConfigHandle)
 
 	r.GET("/inner/api/v1/network/ping", networkTestHandler)
 	r.POST("/api/v1/login", loginHandler)

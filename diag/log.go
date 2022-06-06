@@ -17,9 +17,9 @@ import (
 
 const (
 	logPath           = "/tmp/log/"
-	DIAG_LOG_SCRIPT   = "journalctl -u hm-diag.service -S {since} -U {until} -n 100000 --no-hostname"
-	HIOT_LOG_SCRIPT   = "journalctl -u hiot -S {since} -U {until} -n 100000 --no-hostname"
-	DHCPCD_LOG_SCRIPT = "journalctl -u dhcpcd.service -n 5000"
+	DIAG_LOG_SCRIPT   = "journalctl -u hm-diag.service -S {since} -U {until} -n 100000 --no-hostname -o cat"
+	HIOT_LOG_SCRIPT   = "journalctl -u hiot -S {since} -U {until} -n 100000 --no-hostname -o cat"
+	DHCPCD_LOG_SCRIPT = "journalctl -u dhcpcd.service -n 5000 -o cat"
 )
 
 func PackLogs() (string, error) {
@@ -53,7 +53,6 @@ func PackLogs() (string, error) {
 	tw := tar.NewWriter(writer)
 
 	until := time.Now()
-	// since := time.Date(until.Year(), until.Month(), until.Day(), 0, 0, 0, 0, until.Location())
 	since := until.Add(-time.Hour * 24)
 
 	pktfwdLogChan := make(chan string)
