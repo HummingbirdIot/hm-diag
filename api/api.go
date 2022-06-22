@@ -16,6 +16,7 @@ import (
 	"xdt.com/hm-diag/diag"
 	"xdt.com/hm-diag/diag/device"
 	"xdt.com/hm-diag/diag/miner"
+	"xdt.com/hm-diag/diag/onboarding"
 	"xdt.com/hm-diag/link"
 	"xdt.com/hm-diag/util"
 )
@@ -253,6 +254,7 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	r.GET("/inner/state", stateInnerHandler)
 
 	r.GET("/inner/api/v1/version", versionHandler)
+	r.GET("/inner/api/v1/onboarding", checkOnboarding)
 
 	// TODO remove this route after next two version
 	r.GET("/state", stateHandler)
@@ -264,6 +266,25 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	r.POST("/api/v1/password", passwordHandler)
 
 	r.GET("/inner/api/v1/log/download", downloadLogFile)
+}
+
+func checkOnboarding(c *gin.Context) {
+	//如果是已经boarding状态的话就缓存住，不每次都重新获取数据
+	if onboardingCache.onboarding {
+		c.JSON(200, RespOK(onboardingCache.onboarding))
+		return
+	}
+
+	expirationTime := onboardingCache.cacheDate.Add(time.Second * time.Duration(defaultCacheDuration))
+	//30秒内不重复调用外部api
+	if expirationTime.After(time.Now()) {
+		c.JSON(200, RespOK(onboardingCache.onboarding))
+		return
+	}
+	isOnboarding := onboarding.CheckOnboarding()
+	onboardingCache.onboarding = isOnboarding
+	onboardingCache.cacheDate = time.Now()
+	c.JSON(200, RespOK(isOnboarding))
 }
 
 func stateInnerHandler(c *gin.Context) {
