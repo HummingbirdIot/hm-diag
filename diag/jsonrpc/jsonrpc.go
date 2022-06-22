@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
+
+	"github.com/kpango/glg"
 )
 
 type Client struct {
@@ -34,7 +35,7 @@ func (c Client) Call(method string, params interface{}) (result interface{}, err
 	jsonBuf, _ := json.Marshal(req)
 	resp, err := http.Post(c.Url, "application/json", bytes.NewReader(jsonBuf))
 	if err != nil {
-		log.Println("jsonrpc error resp: ", err, " jsonrpc call: ", c.Url, string(jsonBuf))
+		glg.Error("jsonrpc error resp: ", err, " jsonrpc call: ", c.Url, string(jsonBuf))
 		return nil, err
 	}
 
@@ -50,7 +51,7 @@ func (c Client) Call(method string, params interface{}) (result interface{}, err
 		return nil, err
 	}
 	if res["error"] != nil {
-		log.Println("jsonrpc error: ", string(bodyStr), " jsonrpc call: ", c.Url, string(jsonBuf))
+		glg.Error("jsonrpc error: ", string(bodyStr), " jsonrpc call: ", c.Url, string(jsonBuf))
 		return nil, fmt.Errorf(bodyStr)
 	}
 

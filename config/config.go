@@ -3,9 +3,10 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net"
 	"os"
+
+	"github.com/kpango/glg"
 )
 
 type CONF_BOOL int
@@ -47,9 +48,9 @@ func InitConf(cf GlobalConfig) {
 	conf = &cf
 	if cf.PublicAccess == CONF_DEFAULT {
 		confFile, err := ReadConfigFile()
-		log.Printf("read config file content: %#v", confFile)
+		glg.Infof("read config file content: %#v", confFile)
 		if err != nil {
-			log.Println(err)
+			glg.Error(err)
 			cf.PublicAccess = CONF_OFF
 			cf.DashboardPassword = false
 		} else {
@@ -70,10 +71,10 @@ func checkPassword(confFile *ConfiFileData) {
 			conf.Password = inet.HardwareAddr.String()
 		}
 	} else {
-		log.Println("set hotspot password from config.json , password: ", confFile.Password)
+		glg.Debug("set hotspot password from config.json , password: ", confFile.Password)
 		conf.Password = confFile.Password
 	}
-	log.Println("hotspot password: ", conf.Password)
+	glg.Debug("hotspot password: ", conf.Password)
 }
 
 func Config() *GlobalConfig {
@@ -87,7 +88,7 @@ func ReadConfigFile() (*ConfiFileData, error) {
 	f, err := os.Open(CONF_ETC_FILE)
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Println("conf file is not exist")
+			glg.Debug("conf file is not exist")
 			return &ConfiFileData{PublicAccess: CONF_DEFAULT}, nil
 		}
 		return nil, fmt.Errorf("can't open config file %s", CONF_ETC_FILE)

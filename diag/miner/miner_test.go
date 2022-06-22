@@ -3,11 +3,11 @@ package miner
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"testing"
 
 	"github.com/jarcoal/httpmock"
+	"github.com/kpango/glg"
 )
 
 const (
@@ -31,12 +31,12 @@ type Resp struct {
 func TestGetPeerAddr(t *testing.T) {
 	httpmock.Activate()
 	defer httpmock.DeactivateAndReset()
-	log.Println("httpMock")
+	glg.Info("httpMock")
 	httpmock.RegisterResponder("POST", url, func(r *http.Request) (*http.Response, error) {
 		buffer, _ := ioutil.ReadAll(r.Body)
 		var req Req
 		json.Unmarshal(buffer, &req)
-		log.Println("<<<<<<<<<<<<", req.Method)
+		glg.Info("<<<<<<<<<<<<", req.Method)
 		switch req.Method {
 		case "info_height":
 			return httpmock.NewStringResponse(200, string("13456")), nil

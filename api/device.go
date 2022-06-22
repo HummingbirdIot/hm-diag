@@ -1,12 +1,12 @@
 package api
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/ctrl"
 	"xdt.com/hm-diag/devdis"
 	"xdt.com/hm-diag/diag"
@@ -34,14 +34,14 @@ func deviceLightBlink(c *gin.Context) {
 				})
 		}
 	}
-	log.Println("set device light blink, durSec: ", durSec)
+	glg.Info("set device light blink, durSec: ", durSec)
 	err := ctrl.SetDeviceLightBlink(durSec)
 	if err != nil {
 		c.JSON(500, RespBody{
 			Code:    500,
 			Message: err.Error(),
 		})
-		log.Println("set device light blink error: ", err)
+		glg.Error("set device light blink error: ", err)
 	} else {
 		c.JSON(200, RespOK(nil))
 	}
@@ -65,7 +65,7 @@ func logQuery(c *gin.Context) {
 	logType := c.Query("type")
 	if logType != string(device.MINER_LOG) && logType != string(device.PWT_FWD_LOG) {
 		c.JSON(400, RespBody{Code: 400, Message: "type should be miner or pktfwd"})
-		log.Printf("query log invalid type %s\n", logType)
+		glg.Errorf("query log invalid type %s\n", logType)
 		return
 	}
 	filter := c.Query("filter")
@@ -76,14 +76,14 @@ func logQuery(c *gin.Context) {
 		if st, err := time.Parse("2006-01-02T15:04:05", c.Query("since")); err == nil {
 			since = st
 		} else {
-			log.Println("query log, convert since time error: ", err)
+			glg.Error("query log, convert since time error: ", err)
 		}
 		if tt, err := time.Parse("2006-01-02T15:04:05", c.Query("until")); err == nil {
 			until = tt
 		} else {
-			log.Println("query log, convert until time error: ", err)
+			glg.Error("query log, convert until time error: ", err)
 		}
-		log.Printf("query log, type: %s,since: %s, until: %s, filter: %s\n",
+		glg.Infof("query log, type: %s,since: %s, until: %s, filter: %s\n",
 			logType, since, until, filter)
 	} else {
 		if l := c.Query("limit"); l != "" {
@@ -94,7 +94,7 @@ func logQuery(c *gin.Context) {
 			}
 			maxLines = uint(limit)
 		}
-		log.Printf("query log, type: %s,filter: %s, limit lines: %d\n",
+		glg.Infof("query log, type: %s,filter: %s, limit lines: %d\n",
 			logType, filter, maxLines)
 	}
 
@@ -109,6 +109,6 @@ func logQuery(c *gin.Context) {
 		c.JSON(200, RespOK(l))
 	} else {
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
-		log.Println("query log error: ", err)
+		glg.Errorf("query log error: ", err)
 	}
 }

@@ -3,7 +3,6 @@ package api
 import (
 	"crypto/md5"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -39,8 +38,6 @@ func ValidateToken(token string) error {
 	if time.Now().UnixMilli()-ts > TOKEN_EXPIRE_MS {
 		return fmt.Errorf("token expired")
 	}
-	log.Println("GenTokenSecret", GenTokenSecret(ts))
-	log.Println(sum)
 	if GenTokenSecret(ts) != sum {
 		return fmt.Errorf("invalid token")
 	}

@@ -1,13 +1,13 @@
 package device
 
 import (
-	"log"
 	"net"
 	"os/exec"
 	"strings"
 	"time"
 
 	"github.com/godbus/dbus/v5"
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/util"
 
 	"github.com/shirou/gopsutil/v3/cpu"
@@ -182,12 +182,12 @@ func GetSn() (string, error) {
 func GetAddrs(name string) (net.HardwareAddr, []string, error) {
 	inet, err := net.InterfaceByName(name)
 	if err != nil {
-		log.Println("[error] can't get net interface of the machine")
+		glg.Error("[error] can't get net interface of the machine")
 		return nil, nil, err
 	}
 	addrs, err := inet.Addrs()
 	if err != nil {
-		log.Println("[error] can't get ip address of the machine")
+		glg.Error("[error] can't get ip address of the machine")
 		return nil, nil, err
 	}
 	ips := make([]string, len(addrs))
@@ -203,13 +203,13 @@ func NetworkTest() []NetworkTestInfo {
 	if err != nil {
 		localTest.Error = err.Error()
 		localTest.OK = false
-		log.Println("get local ip error:", err)
+		glg.Error("get local ip error:", err)
 	}
 	err = util.PingTest(localAddr)
 	if err != nil {
 		localTest.Error = err.Error()
 		localTest.OK = false
-		log.Printf("ping local(%s) test error:,%s", localAddr, err)
+		glg.Errorf("ping local(%s) test error:,%s", localAddr, err)
 	}
 
 	gatewayTest := NetworkTestInfo{Name: "gateway", Addr: util.GatewayAddr, OK: true}
@@ -217,7 +217,7 @@ func NetworkTest() []NetworkTestInfo {
 	if err != nil {
 		gatewayTest.Error = err.Error()
 		gatewayTest.OK = false
-		log.Printf("ping gateway(%s) test error:,%s", util.GatewayAddr, err)
+		glg.Errorf("ping gateway(%s) test error:,%s", util.GatewayAddr, err)
 	}
 
 	dnsAddr := "8.8.8.8"
@@ -226,7 +226,7 @@ func NetworkTest() []NetworkTestInfo {
 	if err != nil {
 		dnsTest.Error = err.Error()
 		dnsTest.OK = false
-		log.Printf("ping dns(%s) test error:,%s", dnsAddr, err)
+		glg.Error("ping dns(%s) test error:,%s", dnsAddr, err)
 	}
 
 	internetAddr := "baidu.com"
@@ -235,7 +235,7 @@ func NetworkTest() []NetworkTestInfo {
 	if err != nil {
 		internetTest.Error = err.Error()
 		internetTest.OK = false
-		log.Printf("ping dns(%s) test error:,%s", internetAddr, err)
+		glg.Errorf("ping dns(%s) test error:,%s", internetAddr, err)
 	}
 
 	return []NetworkTestInfo{localTest, gatewayTest, dnsTest, internetTest}

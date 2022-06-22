@@ -1,9 +1,10 @@
 package config
 
 import (
-	"log"
 	"os"
 	"testing"
+
+	"github.com/kpango/glg"
 )
 
 var defaultConf = GlobalConfig{
@@ -21,7 +22,7 @@ var configFile = ConfiFileData{
 
 func setup() {
 	InitConf(defaultConf)
-	log.Println("init config")
+	glg.Debug("init config")
 }
 
 func TestSaveConfigFile(t *testing.T) {

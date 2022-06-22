@@ -3,7 +3,6 @@ package link
 import (
 	"context"
 	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -11,6 +10,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/kpango/glg"
 	"github.com/pkg/errors"
 )
 
@@ -100,10 +100,10 @@ func (c *UplinkConn) Connected() bool {
 func (c *UplinkConn) connect(ctx context.Context) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	log.Println("ws server: " + c.config.server)
+	glg.Info("ws server: " + c.config.server)
 	wsConn, resp, err := websocket.DefaultDialer.Dial(c.config.server, c.config.header)
 	if err != nil {
-		log.Println("connect ws server error: ", err)
+		glg.Error("connect ws server error: ", err)
 		c.httpResp = resp
 		c.connectErr = err
 		return errors.WithMessage(err, "dial connection")
@@ -112,7 +112,7 @@ func (c *UplinkConn) connect(ctx context.Context) error {
 		return c.wsCloseHandler(ctx, code, text)
 	})
 	wsConn.SetPongHandler(func(d string) error {
-		log.Println("got pong", d)
+		glg.Debug("got pong", d)
 		return nil
 	})
 
@@ -129,18 +129,18 @@ func (c *UplinkConn) keepPing(ctx context.Context) {
 	// Keep connection alive
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	intervalTime := 30 + r.Intn(10) + r.Intn(3)*10
-	log.Println("ws connection keep ping start interval : ", intervalTime)
+	glg.Info("ws connection keep ping start interval : ", intervalTime)
 
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("kepp ping break case context done")
+			glg.Warn("kepp ping break case context done")
 			return
 		case <-time.After(time.Duration(intervalTime) * time.Second):
-			log.Println("ping ws server:", c.config.server)
+			glg.Debug("ping ws server:", c.config.server)
 			err := c.ws.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second))
 			if err != nil {
-				log.Println("ws connection ping error", err)
+				glg.Error("ws connection ping error", err)
 				c.wsCloseHandler(ctx, 1006, err.Error())
 			}
 		}
@@ -149,7 +149,7 @@ func (c *UplinkConn) keepPing(ctx context.Context) {
 
 //ws关闭时处理函数
 func (c *UplinkConn) wsCloseHandler(ctx context.Context, code int, text string) error {
-	log.Printf("ws closed, code: %d, text: %s", code, text)
+	glg.Info("ws closed, code: %d, text: %s", code, text)
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.connected = false
@@ -159,7 +159,7 @@ func (c *UplinkConn) wsCloseHandler(ctx context.Context, code int, text string) 
 		go func() {
 			err := c.reconnect(ctx)
 			if err != nil {
-				log.Println("reconnect error : ", err)
+				glg.Error("reconnect error : ", err)
 			}
 			return
 		}()
@@ -173,7 +173,7 @@ func (c *UplinkConn) wsCloseHandler(ctx context.Context, code int, text string) 
 //ws重连
 func (c *UplinkConn) reconnect(ctx context.Context) error {
 	// TODO: reconnect
-	log.Println("reconnect...")
+	glg.Info("reconnect...")
 	err := c.connect(ctx)
 	return err
 }

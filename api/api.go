@@ -6,17 +6,16 @@ import (
 	"encoding/json"
 	"io"
 	"io/fs"
-	"log"
 	"net/http"
 	"path"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag"
 	"xdt.com/hm-diag/diag/device"
 	"xdt.com/hm-diag/diag/miner"
-	"xdt.com/hm-diag/diag/onboarding"
 	"xdt.com/hm-diag/link"
 	"xdt.com/hm-diag/util"
 )
@@ -254,7 +253,6 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	r.GET("/inner/state", stateInnerHandler)
 
 	r.GET("/inner/api/v1/version", versionHandler)
-	r.GET("/inner/api/v1/onboarding", checkOnboarding)
 
 	// TODO remove this route after next two version
 	r.GET("/state", stateHandler)
@@ -266,27 +264,6 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	r.POST("/api/v1/password", passwordHandler)
 
 	r.GET("/inner/api/v1/log/download", downloadLogFile)
-}
-
-func checkOnboarding(c *gin.Context) {
-	//如果是已经boarding状态的话就缓存住，不每次都重新获取数据
-	if onboardingCache.onboarding {
-		log.Println(">>>>>>>>cache1")
-		c.JSON(200, RespOK(onboardingCache.onboarding))
-		return
-	}
-
-	expirationTime := onboardingCache.cacheDate.Add(time.Second * time.Duration(defaultCacheDuration))
-	//30秒内不重复调用外部api
-	if expirationTime.After(time.Now()) {
-		log.Println(">>>>>>>>cache2")
-		c.JSON(200, RespOK(onboardingCache.onboarding))
-		return
-	}
-	isOnboarding := onboarding.CheckOnboarding()
-	onboardingCache.onboarding = isOnboarding
-	onboardingCache.cacheDate = time.Now()
-	c.JSON(200, RespOK(isOnboarding))
 }
 
 func stateInnerHandler(c *gin.Context) {
@@ -330,13 +307,13 @@ func saveClientConfigHandle(c *gin.Context) {
 	var conf ClientConfigBody
 	err := json.NewDecoder(c.Request.Body).Decode(&conf)
 	if err != nil {
-		log.Println(err)
+		glg.Error(err)
 		c.JSON(400, RespBody{Code: 400, Message: "invalid request body for config"})
 		return
 	}
 	existConfig, err := link.LoadClientConfig()
 	if err != nil {
-		log.Println("get clientConfig error : ", err)
+		glg.Error("get clientConfig error : ", err)
 		c.JSON(500, RespBody{Code: 500, Message: "get clientConfig error : " + err.Error()})
 		return
 	}
@@ -344,22 +321,22 @@ func saveClientConfigHandle(c *gin.Context) {
 	newConfig.ID = existConfig.ID
 	newConfig.Secret = conf.Secret
 	newConfig.Server = conf.Server
-	log.Printf("to save clent config file, content: %#v", conf)
+	glg.Debug("to save clent config file, content: %#v", conf)
 	err = link.SaveClientConfig(newConfig)
 	if err != nil {
-		log.Println("save clent config file error:", err)
+		glg.Error("save clent config file error:", err)
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 		return
 	}
-	log.Printf("saved client config file, content: %#v", newConfig)
-	log.Printf("to reconnect link server: %#v", conf.Server)
+	glg.Debug("saved client config file, content: %#v", newConfig)
+	glg.Debug("to reconnect link server: %#v", conf.Server)
 	err = link.Start(context.Background())
 	if err != nil {
-		log.Println("reconnect link error : ", err)
+		glg.Error("reconnect link error : ", err)
 		c.JSON(500, RespBody{Code: 500, Message: "save client config successful, but reconnect error : " + err.Error()})
 		return
 	}
-	log.Printf("reconnected link server: %#v", conf.Server)
+	glg.Info("reconnected link server: %#v", conf.Server)
 	c.JSON(200, RespOK(nil))
 }
 
@@ -370,21 +347,21 @@ func saveConfigHandle(c *gin.Context) {
 		c.JSON(400, RespBody{Code: 400, Message: "invalid request body for config"})
 		return
 	}
-	log.Printf("to save config file, content: %#v", conf)
+	glg.Debug("to save config file, content: %#v", conf)
 	err = config.SaveConfigFile(conf)
 	if err != nil {
-		log.Println("save config file error:", err)
+		glg.Error("save config file error:", err)
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 		return
 	}
-	log.Printf("saved config file, content: %#v", conf)
+	glg.Debug("saved config file, content: %#v", conf)
 	c.JSON(200, RespOK(nil))
 }
 
 func getConfigHandle(c *gin.Context) {
 	conf, err := config.ReadConfigFile()
 	if err != nil {
-		log.Println("get config file error:", err)
+		glg.Error("get config file error:", err)
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 		return
 	}
@@ -446,7 +423,7 @@ func passwordHandler(c *gin.Context) {
 		newConfig.PublicAccess = confFile.PublicAccess
 		err = config.SaveConfigFile(newConfig)
 		if err != nil {
-			log.Println("method SetPassword error:", err)
+			glg.Error("method SetPassword error:", err)
 			c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 			return
 		}
@@ -459,7 +436,6 @@ func passwordHandler(c *gin.Context) {
 func downloadLogFile(c *gin.Context) {
 
 	filePath, err := diag.PackLogs()
-	log.Println(filePath)
 	if err != nil {
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 	}

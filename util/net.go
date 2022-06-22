@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"log"
 	"net"
 	"os/exec"
 	"strings"
+
+	"github.com/kpango/glg"
 )
 
 var (
@@ -24,13 +25,13 @@ func init() {
 	err := cmd.Run()
 
 	if err != nil {
-		log.Println("get dns addr error : ", err.Error(), stderr.String())
+		glg.Error("get dns addr error : ", err.Error(), stderr.String())
 	}
 
 	outString := out.String()
 	s := strings.ReplaceAll(outString, "\n", "")
 	s = strings.ReplaceAll(s, "\t", "")
-	log.Println("get dns addr:", s)
+	glg.Info("get dns addr:", s)
 	GatewayAddr = s
 }
 
@@ -40,7 +41,7 @@ func IsPrivateIp(ip net.IP) bool {
 
 func IpByInterfaceName(name string) (string, error) {
 	iface, err := net.InterfaceByName(name)
-	log.Printf("========== ip %#v", iface)
+	glg.Infof("========== ip %#v", iface)
 	if err != nil {
 		return "", err
 	}
@@ -81,11 +82,11 @@ func PingTest(ip string) error {
 	cmd.Stderr = &stderr
 	cmd.Stdout = &out
 	err := cmd.Run()
-	log.Println("cmd out: ", out.String())
+	glg.Debug("cmd out: ", out.String())
 	if err != nil {
-		log.Println("network error : ", err.Error(), stderr.String())
+		glg.Error("network error : ", err.Error(), stderr.String())
 		return fmt.Errorf(stderr.String())
 	}
-	log.Println("network ok")
+	glg.Info("network ok")
 	return nil
 }

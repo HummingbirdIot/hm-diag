@@ -3,10 +3,10 @@ package link
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
+	"github.com/kpango/glg"
 	"github.com/pkg/errors"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag/miner"
@@ -29,9 +29,9 @@ type ClientConfig struct {
 func InitClientConfig() {
 	c, err := LoadClientConfig()
 	if err != nil {
-		log.Println("load client config error", err)
+		glg.Error("load client config error", err)
 	} else {
-		log.Println("load clieng config: ", c)
+		glg.Info("load clieng config: ", c)
 		clientConfig = c
 	}
 }
@@ -55,7 +55,7 @@ func SaveClientConfig(c ClientConfig) error {
 	}
 	var conf ClientConfig
 	json.Unmarshal(buf, &conf)
-	log.Println("set client config cache, content : ", conf)
+	glg.Info("set client config cache, content : ", conf)
 	clientConfig = &conf
 	return nil
 }
@@ -66,7 +66,7 @@ func LoadClientConfig() (*ClientConfig, error) {
 	if err != nil {
 		if os.IsNotExist(err) {
 			//配置文件不存在
-			log.Println("File config not exist")
+			glg.Warn("File config not exist")
 		} else {
 			return nil, defaultErr
 		}
@@ -78,14 +78,14 @@ func LoadClientConfig() (*ClientConfig, error) {
 	}
 
 	if conf.ID == "" {
-		log.Println("client config file not have ID")
+		glg.Info("client config file not have ID")
 		addr := miner.GetPeerAddr(config.Config().MinerUrl)
 		if addr != "" {
 			conf.ID = strings.Split(addr, "/")[2]
 		} else {
 			return nil, fmt.Errorf("hotspot peerAddr is empty")
 		}
-		log.Println("set client config file ID: ", conf.ID)
+		glg.Info("set client config file ID: ", conf.ID)
 	}
 
 	return &conf, nil

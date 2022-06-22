@@ -12,6 +12,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/api"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/devdis"
@@ -93,10 +94,13 @@ func setVersion() {
 }
 
 func main() {
+	glg.Get().SetLineTraceMode(glg.TraceLineLong)
+
 	diag.InitTask(*config.Config())
 	diagTask := diag.TaskInstance()
 	rootCtx := context.Background()
 	if flag.Arg(0) == "get" {
+		glg.Info(opt.Verbose)
 		if !opt.Verbose {
 			log.SetOutput(io.Discard)
 		}
@@ -107,7 +111,7 @@ func main() {
 	} else if flag.Arg(0) == "server" || flag.Arg(0) == "" {
 		link.InitClientConfig()
 		optJson, _ := json.Marshal(opt)
-		log.Println("options: ", string(optJson))
+		glg.Info("options: ", string(optJson))
 
 		// init job
 		go diagTask.StartTaskJob(true)

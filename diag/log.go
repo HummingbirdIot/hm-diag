@@ -5,13 +5,13 @@ import (
 	"compress/gzip"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path"
 	"strings"
 	"time"
 
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/config"
 )
 
@@ -40,11 +40,11 @@ func PackLogs() (string, error) {
 	// 将压缩文档内容写入文件 file.tar.gz
 	f, err := os.OpenFile(logFileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
-		log.Fatal(err)
+		glg.Fatal(err)
 	}
 
 	if writer, err = gzip.NewWriterLevel(f, gzip.BestCompression); err != nil {
-		log.Fatalln(err)
+		glg.Fatalln(err)
 	}
 	defer writer.Close()
 
@@ -57,7 +57,7 @@ func PackLogs() (string, error) {
 
 	pktfwdLogChan := make(chan string)
 	go func() {
-		log.Println("srart query pktfwd log")
+		glg.Debug("srart query pktfwd log")
 		pktfwd, err := QueryPktfwdLog(since, until, "")
 		if err != nil {
 			pktfwdLogChan <- ""
@@ -67,7 +67,7 @@ func PackLogs() (string, error) {
 
 	minerLogChan := make(chan string)
 	go func() {
-		log.Println("srart query miner log")
+		glg.Debug("srart query miner log")
 		miner, err := QueryMinerLog("", 5000)
 		if err != nil {
 			minerLogChan <- ""
@@ -77,7 +77,7 @@ func PackLogs() (string, error) {
 
 	dhcpcdLogChan := make(chan string)
 	go func() {
-		log.Println("srart query dhcpcd log")
+		glg.Debug("srart query dhcpcd log")
 		dhcpcd, err := QueryDhcpcdLog()
 		if err != nil {
 			dhcpcdLogChan <- ""
@@ -87,7 +87,7 @@ func PackLogs() (string, error) {
 
 	diagLogChan := make(chan string)
 	go func() {
-		log.Println("srart query diag log")
+		glg.Debug("srart query diag log")
 		diag, err := QueryDiagLog(since, until)
 		if err != nil {
 			diagLogChan <- ""
@@ -97,7 +97,7 @@ func PackLogs() (string, error) {
 
 	hiotLogChan := make(chan string)
 	go func() {
-		log.Println("srart query hiot log")
+		glg.Debug("srart query hiot log")
 		hiot, err := QueryHiotLog(since, until)
 		if err != nil {
 			hiotLogChan <- ""
@@ -129,14 +129,17 @@ func PackLogs() (string, error) {
 			Size: int64(len(file.Body)),
 		}
 		if err := tw.WriteHeader(hdr); err != nil {
-			log.Fatal(err)
+			glg.Error(err)
+			return "", err
 		}
 		if _, err := tw.Write([]byte(file.Body)); err != nil {
-			log.Fatal(err)
+			glg.Error(err)
+			return "", err
 		}
 	}
 	if err := tw.Close(); err != nil {
-		log.Fatal(err)
+		glg.Error(err)
+		return "", err
 	}
 
 	return logFileName, nil
@@ -147,7 +150,7 @@ func QueryDiagLog(since, until time.Time) (string, error) {
 	u := until.Format("'2006-01-02 15:04:05'")
 	script := strings.ReplaceAll(DIAG_LOG_SCRIPT, "{since}", s)
 	script = strings.ReplaceAll(script, "{until}", u)
-	log.Println("exec cmd: ", script)
+	glg.Debug("exec cmd: ", script)
 	cmd := exec.Command("bash", "-c", script)
 	out, err := cmd.Output()
 	if err != nil {
@@ -161,7 +164,7 @@ func QueryHiotLog(since, until time.Time) (string, error) {
 	u := until.Format("'2006-01-02 15:04:05'")
 	script := strings.ReplaceAll(HIOT_LOG_SCRIPT, "{since}", s)
 	script = strings.ReplaceAll(script, "{until}", u)
-	log.Println("exec cmd: ", script)
+	glg.Debug("exec cmd: ", script)
 	cmd := exec.Command("bash", "-c", script)
 	out, err := cmd.Output()
 	if err != nil {
@@ -186,7 +189,7 @@ func QueryPktfwdLog(since, until time.Time, filterTxt string) (string, error) {
 		since.Format("'2006-01-02 15:04:05'"),
 		until.Format("'2006-01-02 15:04:05'"),
 		"'"+filterTxt+"'")
-	log.Println("exec cmd:", cmdStr)
+	glg.Debug("exec cmd:", cmdStr)
 	cmd := exec.Command("bash", "-c", cmdStr)
 	cmd.Dir = config.Config().GitRepoDir
 	out, err := cmd.Output()
@@ -201,7 +204,7 @@ func QueryMinerLog(filterTxt string, maxLines uint) (string, error) {
 	cmdStr := fmt.Sprintf("%s %s %d",
 		queryCmd,
 		"'"+filterTxt+"'", maxLines)
-	log.Println("exec cmd:", cmdStr)
+	glg.Debug("exec cmd:", cmdStr)
 	cmd := exec.Command("bash", "-c", cmdStr)
 	cmd.Dir = config.Config().GitRepoDir
 	out, err := cmd.Output()

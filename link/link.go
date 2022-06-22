@@ -3,7 +3,8 @@ package link
 import (
 	"context"
 	"fmt"
-	"log"
+
+	"github.com/kpango/glg"
 )
 
 var (
@@ -38,7 +39,7 @@ func Start(rootCtx context.Context) error {
 		linkLog(err)
 		return err
 	}
-	log.Println(">>>>>>>>> Link client connect success")
+	glg.Info(">>>>>>>>> Link client connect success")
 
 	return nil
 }
@@ -56,5 +57,5 @@ func ReportData(data any) error {
 }
 
 func linkLog(err error) {
-	log.Println("link start failed", err)
+	glg.Error("link start failed", err)
 }

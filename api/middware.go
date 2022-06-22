@@ -1,10 +1,10 @@
 package api
 
 import (
-	"log"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/util"
 )
@@ -47,7 +47,7 @@ func PrivateAccessMiddle() gin.HandlerFunc {
 
 		inPrivate := false
 		for _, p := range PrivateAccessPaths {
-			log.Println(p, c.Request.URL.Path)
+			glg.Debug(p, c.Request.URL.Path)
 			if p == c.Request.URL.Path {
 				inPrivate = true
 				break
@@ -61,10 +61,10 @@ func PrivateAccessMiddle() gin.HandlerFunc {
 		canAccess := false
 		rIp, ok := c.RemoteIP()
 		if !ok {
-			log.Printf("get remote ip for request: %s from %s", c.Request.URL, c.Request.RemoteAddr)
+			glg.Debugf("get remote ip for request: %s from %s", c.Request.URL, c.Request.RemoteAddr)
 			canAccess = false
 		} else if util.IsPrivateIp(rIp) {
-			log.Printf("is private ip for request: %s ", c.Request.URL)
+			glg.Debugf("is private ip for request: %s ", c.Request.URL)
 			canAccess = true
 		}
 		if canAccess {
@@ -84,7 +84,7 @@ func AuthMiddleware() gin.HandlerFunc {
 
 		inPrivate := false
 		for _, p := range PrivateAccessPaths {
-			log.Println(p, c.Request.URL.Path)
+			glg.Debug(p, c.Request.URL.Path)
 			if p == c.Request.URL.Path {
 				inPrivate = true
 				break
@@ -99,10 +99,10 @@ func AuthMiddleware() gin.HandlerFunc {
 		canAccess := false
 		rIp, ok := c.RemoteIP()
 		if !ok {
-			log.Printf("get remote ip for request: %s from %s", c.Request.URL, c.Request.RemoteAddr)
+			glg.Debugf("get remote ip for request: %s from %s", c.Request.URL, c.Request.RemoteAddr)
 			canAccess = false
 		} else if util.IsPrivateIp(rIp) {
-			log.Printf("is private ip for request: %s ", c.Request.URL)
+			glg.Debugf("is private ip for request: %s ", c.Request.URL)
 			canAccess = true
 		}
 		if canAccess {
