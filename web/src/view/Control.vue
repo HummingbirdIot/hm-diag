@@ -66,6 +66,12 @@
       <Switch size="small" v-model="accessViaPublicIP" @click="saveSafeConf"/>
     </Cell>
   </CellGroup> -->
+
+  <CellGroup title="Safe">
+    <Cell title="Dashboard Password">
+      <Switch size="small" v-model="dashboardPassword" @click="switchPassword"/>
+    </Cell>
+  </CellGroup>
   <br />
   <br />
   <br />
@@ -78,6 +84,7 @@ import * as axios from "axios"
 import * as api from "../api/backend"
 import * as errors from "../util/errors"
 import { useStore } from 'vuex'
+import { toLoginView,AuthToken } from "../api/auth"
 
 const store = useStore()
 
@@ -88,6 +95,7 @@ const progress = ref(0)
 const snapState = reactive({ state: "unknown", file: "", time: "not generated" })
 
 const accessViaPublicIP = ref(false)
+const dashboardPassword = ref(false)
 
 function reboot() {
   api.deviceReboot()
@@ -253,9 +261,12 @@ function getSafeConf() {
   api.configGet()
     .then(r => {
       accessViaPublicIP.value = r.publicAccess == 1 ? true : false
+      dashboardPassword.value = r.dashboardPassword
+      localStorage.setItem("config",JSON.stringify(r))
       store.commit("safeConf", r)
     })
 }
+
 function saveSafeConf() {
   Dialog.confirm({ 
     title: "Important !", 
@@ -267,6 +278,28 @@ function saveSafeConf() {
     api.configSet({PublicAccess: v})
       .then(r => {
         Notify({type:"success", message: "success"})
+      })
+      .catch(e=>{
+      })
+  })
+  .catch(()=>{
+    accessViaPublicIP.value = !accessViaPublicIP.value
+  })
+}
+
+function switchPassword() {
+  Dialog.confirm({ 
+    title: "Important !", 
+    message:'when able "Dashboard Password",open the dashboard requires a password to log in,this potspot default password is '
+    + localStorage.macPath + '\nplease keep it safe'
+  })
+  .then(() => {
+    api.configSet({dashboardPassword: dashboardPassword.value})
+      .then(r => {
+        Notify({type:"success", message: "success"})
+        localStorage.setItem("config",JSON.stringify({dashboardPassword: dashboardPassword.value}))
+        AuthToken.clean()
+        toLoginView()
       })
       .catch(e=>{
       })

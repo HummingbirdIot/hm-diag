@@ -2,7 +2,9 @@ package link
 
 import (
 	"context"
-	"log"
+	"fmt"
+
+	"github.com/kpango/glg"
 )
 
 var (
@@ -27,6 +29,9 @@ func Start(rootCtx context.Context) error {
 		linkLog(err)
 		return err
 	}
+	if conf == nil {
+		return fmt.Errorf("client config is nil")
+	}
 	singleClient.config = *conf
 
 	err = singleClient.Start(ctx)
@@ -34,9 +39,16 @@ func Start(rootCtx context.Context) error {
 		linkLog(err)
 		return err
 	}
-	log.Println(">>>>>>>>> Link client connect success")
+	glg.Info(">>>>>>>>> Link client connect success")
 
 	return nil
+}
+
+func Connected() bool {
+	if singleClient.conn == nil {
+		return false
+	}
+	return singleClient.conn.connected
 }
 
 func ReportData(data any) error {
@@ -45,5 +57,5 @@ func ReportData(data any) error {
 }
 
 func linkLog(err error) {
-	log.Println("link start failed", err)
+	glg.Error("link start failed", err)
 }

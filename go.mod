@@ -13,6 +13,12 @@ require (
 )
 
 require (
+	github.com/goccy/go-json v0.9.7 // indirect
+	github.com/kpango/fastime v1.1.4 // indirect
+	github.com/kpango/glg v1.6.11 // indirect
+)
+
+require (
 	github.com/StackExchange/wmi v1.2.1 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-ole/go-ole v1.2.5 // indirect
@@ -20,6 +26,7 @@ require (
 	github.com/go-playground/universal-translator v0.17.0 // indirect
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/jarcoal/httpmock v1.2.0
 	github.com/json-iterator/go v1.1.9 // indirect
 	github.com/leodido/go-urn v1.2.0 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect

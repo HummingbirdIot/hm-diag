@@ -1,15 +1,13 @@
 package device
 
 import (
-	"fmt"
-	"log"
 	"net"
 	"os/exec"
 	"strings"
 	"time"
 
 	"github.com/godbus/dbus/v5"
-	"xdt.com/hm-diag/config"
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/util"
 
 	"github.com/shirou/gopsutil/v3/cpu"
@@ -67,6 +65,13 @@ type DeviceInfo struct {
 	Mem          MemInfo            `json:"mem"`
 	NetInterface []NetInterfaceInfo `json:"netInterface"`
 	Wifi         WifiInfo           `json:"wifi"`
+}
+
+type NetworkTestInfo struct {
+	Name  string `json:"name"`
+	Addr  string `json:"addr"`
+	OK    bool   `json:"ok"`
+	Error string `json:"error"`
 }
 
 type LogType string
@@ -177,12 +182,12 @@ func GetSn() (string, error) {
 func GetAddrs(name string) (net.HardwareAddr, []string, error) {
 	inet, err := net.InterfaceByName(name)
 	if err != nil {
-		log.Println("[error] can't get net interface of the machine")
+		glg.Error("[error] can't get net interface of the machine")
 		return nil, nil, err
 	}
 	addrs, err := inet.Addrs()
 	if err != nil {
-		log.Println("[error] can't get ip address of the machine")
+		glg.Error("[error] can't get ip address of the machine")
 		return nil, nil, err
 	}
 	ips := make([]string, len(addrs))
@@ -192,34 +197,46 @@ func GetAddrs(name string) (net.HardwareAddr, []string, error) {
 	return inet.HardwareAddr, ips, nil
 }
 
-func QueryPktfwdLog(since, until time.Time, filterTxt string) (string, error) {
-	queryCmd := config.MAIN_SCRIPT + " pktfwdLog"
-	cmdStr := fmt.Sprintf("%s %s %s %s",
-		queryCmd,
-		since.Format("'2006-01-02 15:04:05'"),
-		until.Format("'2006-01-02 15:04:05'"),
-		"'"+filterTxt+"'")
-	log.Println("exec cmd:", cmdStr)
-	cmd := exec.Command("bash", "-c", cmdStr)
-	cmd.Dir = config.Config().GitRepoDir
-	out, err := cmd.Output()
+func NetworkTest() []NetworkTestInfo {
+	localAddr, err := util.IpByInterfaceName("eth0")
+	localTest := NetworkTestInfo{Name: "local", Addr: localAddr, OK: true}
 	if err != nil {
-		return "", err
+		localTest.Error = err.Error()
+		localTest.OK = false
+		glg.Error("get local ip error:", err)
 	}
-	return string(out), nil
-}
+	err = util.PingTest(localAddr)
+	if err != nil {
+		localTest.Error = err.Error()
+		localTest.OK = false
+		glg.Errorf("ping local(%s) test error:,%s", localAddr, err)
+	}
 
-func QueryMinerLog(filterTxt string, maxLines uint) (string, error) {
-	queryCmd := config.MAIN_SCRIPT + " minerLog"
-	cmdStr := fmt.Sprintf("%s %s %d",
-		queryCmd,
-		"'"+filterTxt+"'", maxLines)
-	log.Println("exec cmd:", cmdStr)
-	cmd := exec.Command("bash", "-c", cmdStr)
-	cmd.Dir = config.Config().GitRepoDir
-	out, err := cmd.Output()
+	gatewayTest := NetworkTestInfo{Name: "gateway", Addr: util.GatewayAddr, OK: true}
+	err = util.PingTest(util.GatewayAddr)
 	if err != nil {
-		return "", err
+		gatewayTest.Error = err.Error()
+		gatewayTest.OK = false
+		glg.Errorf("ping gateway(%s) test error:,%s", util.GatewayAddr, err)
 	}
-	return string(out), nil
+
+	dnsAddr := "8.8.8.8"
+	dnsTest := NetworkTestInfo{Name: "dns", Addr: dnsAddr, OK: true}
+	err = util.PingTest(dnsAddr)
+	if err != nil {
+		dnsTest.Error = err.Error()
+		dnsTest.OK = false
+		glg.Error("ping dns(%s) test error:,%s", dnsAddr, err)
+	}
+
+	internetAddr := "baidu.com"
+	internetTest := NetworkTestInfo{Name: "internet", Addr: internetAddr, OK: true}
+	err = util.PingTest(internetAddr)
+	if err != nil {
+		internetTest.Error = err.Error()
+		internetTest.OK = false
+		glg.Errorf("ping dns(%s) test error:,%s", internetAddr, err)
+	}
+
+	return []NetworkTestInfo{localTest, gatewayTest, dnsTest, internetTest}
 }

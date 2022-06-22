@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/kpango/glg"
 	"github.com/pkg/errors"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag/jsonrpc"
@@ -35,36 +35,36 @@ type SnapshotStateRes struct {
 }
 
 func ResyncMiner() error {
-	log.Println("to resync miner")
-	log.Println("exec cmd: bash", resyncMinerCmd)
+	glg.Info("to resync miner")
+	glg.Debug("exec cmd: bash", resyncMinerCmd)
 	cmd := exec.Command("bash", resyncMinerCmd)
 	cmd.Dir = config.Config().GitRepoDir
 	data, err := cmd.Output()
 	if err != nil {
-		log.Println("[error] resync miner error:", err.Error(), string(data))
+		glg.Error("[error] resync miner error:", err.Error(), string(data))
 		return err
 	}
-	log.Println("resync miner output:", string(data))
+	glg.Info("resync miner output:", string(data))
 	return nil
 }
 
 func RestartMiner() error {
-	log.Println("to restart miner")
-	log.Println("exec cmd:", restartMinerCmd)
+	glg.Info("to restart miner")
+	glg.Debug("exec cmd:", restartMinerCmd)
 	cmd := exec.Command("bash", strings.Split(restartMinerCmd, " ")...)
 	cmd.Dir = config.Config().GitRepoDir
 	data, err := cmd.Output()
 	if err != nil {
-		log.Println("[error] restart miner error:", err.Error(), string(data))
+		glg.Error("[error] restart miner error:", err.Error(), string(data))
 		return err
 	}
-	log.Println("restart miner output:", string(data))
+	glg.Info("restart miner output:", string(data))
 	return nil
 }
 
 func SnapshotTake() {
 	fn := func() error {
-		log.Println("spawn cmd: bash ", snapshotTakeCmd)
+		glg.Debug("spawn cmd: bash ", snapshotTakeCmd)
 		cmd := exec.Command("bash", strings.Split(snapshotTakeCmd, " ")...)
 		cmd.Dir = config.Config().GitRepoDir
 		p, err := cmd.StdoutPipe()
@@ -82,11 +82,11 @@ func SnapshotTake() {
 			err = errIn
 			if err == nil {
 				s := string(ln)
-				log.Println("snapshot cmd output:", s)
+				glg.Debug("snapshot cmd output:", s)
 			} else if err == io.EOF {
 				break
 			} else {
-				log.Println("read snapshot cmd ouput error:", err.Error())
+				glg.Error("read snapshot cmd ouput error:", err.Error())
 			}
 		}
 
@@ -102,7 +102,7 @@ func SnapshotTake() {
 func SnapshotState() (*SnapshotStateRes, error) {
 	var result SnapshotStateRes
 	resPrefix := ">>>state:"
-	log.Println("spawn cmd:", snapshotStateCmd)
+	glg.Debug("spawn cmd:", snapshotStateCmd)
 	cmd := exec.Command("bash", strings.Split(snapshotStateCmd, " ")...)
 	cmd.Dir = config.Config().GitRepoDir
 	p, err := cmd.StdoutPipe()
@@ -120,7 +120,7 @@ func SnapshotState() (*SnapshotStateRes, error) {
 		err = errIn
 		if err == nil {
 			s := string(ln)
-			log.Println("snapshot state cmd output:", s)
+			glg.Debug("snapshot state cmd output:", s)
 			if strings.HasPrefix(s, resPrefix) {
 				s = strings.TrimPrefix(s, resPrefix)
 				result, err = parseSnapshotStateResult(s)
@@ -131,7 +131,7 @@ func SnapshotState() (*SnapshotStateRes, error) {
 		} else if err == io.EOF {
 			break
 		} else {
-			log.Println("read snapshot state cmd ouput error:", err.Error())
+			glg.Error("read snapshot state cmd ouput error:", err.Error())
 		}
 	}
 
@@ -169,7 +169,7 @@ func parseSnapshotStateResult(s string) (SnapshotStateRes, error) {
 
 func SnapshotLoad(file string) {
 	fn := func() error {
-		log.Println("exec cmd: bash " + snapshotLoadCmd + " " + file)
+		glg.Debug("exec cmd: bash " + snapshotLoadCmd + " " + file)
 		cmd := exec.Command("bash", snapshotLoadCmd, file)
 		cmd.Dir = config.Config().GitRepoDir
 		p, err := cmd.StdoutPipe()
@@ -187,11 +187,11 @@ func SnapshotLoad(file string) {
 			err = errIn
 			if err == nil {
 				s := string(ln)
-				log.Println("snapshot load cmd output:", s)
+				glg.Info("snapshot load cmd output:", s)
 			} else if err == io.EOF {
 				break
 			} else {
-				log.Println("read snapshot load cmd ouput error:", err.Error())
+				glg.Error("read snapshot load cmd ouput error:", err.Error())
 			}
 		}
 

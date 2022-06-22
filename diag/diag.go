@@ -1,12 +1,15 @@
 package diag
 
 import (
-	"log"
+	"encoding/json"
 	"time"
 
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag/device"
 	"xdt.com/hm-diag/diag/miner"
+	"xdt.com/hm-diag/link"
+	"xdt.com/hm-diag/link/message"
 )
 
 type TaskConfig struct {
@@ -63,7 +66,7 @@ func (t *Task) MinerInfo() TaskData {
 }
 
 func (t *Task) StartTaskJob(runRightNow bool) {
-	log.Printf("task job scheduler start")
+	glg.Debug("task job scheduler start")
 	if t.quitTask != nil {
 		close(t.quitTask)
 	}
@@ -92,10 +95,10 @@ func (t *Task) Stop() {
 func (t *Task) Do() {
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println("do task error", r)
+			glg.Error("do task error", r)
 		}
 	}()
-	log.Println("to do task...")
+	glg.Debug("to do task...")
 	resMap := make(map[string]interface{})
 
 	m := miner.FetchData(t.Config.MinerUrl)
@@ -106,7 +109,25 @@ func (t *Task) Do() {
 	t.data = resMap
 	t.time = time.Now()
 
-	log.Println("task done")
+	if link.Connected() {
+		v, _ := miner.PacketForwardVersion()
+		config, _ := link.GetClientConfig()
+		var res map[string]interface{}
+		res = t.Data().Data
+		res["time"] = t.Data().FetchTime
+		res["packetForwardVersion"] = v
+		buf, err := json.Marshal(res)
+		if err != nil {
+			glg.Error("Marshal task data error: ", err)
+		}
+		err = link.ReportData(message.OfReportData(config.ID+"/hotspotInfoCache", string(buf)))
+		if err != nil {
+			glg.Error("ReportData error: ", err)
+		}
+	} else {
+		glg.Info("ws client not Connected")
+	}
+	glg.Debug("task done")
 }
 
 func (t *Task) FetchMinerInfo() map[string]interface{} {
@@ -118,7 +139,7 @@ func (t *Task) FetchDeviceInfo() map[string]interface{} {
 
 	wifi, err := device.GetWifiInfo()
 	if err != nil {
-		log.Println("fetch wifi info error", err)
+		glg.Error("fetch wifi info error", err)
 	}
 	resMap["wifi"] = wifi
 

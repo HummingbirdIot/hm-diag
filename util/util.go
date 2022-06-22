@@ -1,8 +1,9 @@
 package util
 
 import (
-	"log"
 	"strings"
+
+	"github.com/kpango/glg"
 )
 
 func FisrtLower(s string) string {
@@ -13,12 +14,12 @@ func Sgo(fn func() error, errMsg string) {
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
-				log.Println(errMsg, r)
+				glg.Error(errMsg, r)
 			}
 		}()
 		err := fn()
 		if err != nil {
-			log.Println(errMsg, err)
+			glg.Error(errMsg, err)
 		}
 	}()
 }

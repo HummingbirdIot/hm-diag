@@ -12,12 +12,12 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/api"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/devdis"
 	"xdt.com/hm-diag/diag"
 	"xdt.com/hm-diag/link"
-	"xdt.com/hm-diag/regist"
 	"xdt.com/hm-diag/util"
 )
 
@@ -94,10 +94,13 @@ func setVersion() {
 }
 
 func main() {
+	glg.Get().SetLineTraceMode(glg.TraceLineLong)
+
 	diag.InitTask(*config.Config())
 	diagTask := diag.TaskInstance()
 	rootCtx := context.Background()
 	if flag.Arg(0) == "get" {
+		glg.Info(opt.Verbose)
 		if !opt.Verbose {
 			log.SetOutput(io.Discard)
 		}
@@ -106,12 +109,12 @@ func main() {
 		os.Stdout.WriteString(string(s))
 		return
 	} else if flag.Arg(0) == "server" || flag.Arg(0) == "" {
+		link.InitClientConfig()
 		optJson, _ := json.Marshal(opt)
-		log.Println("options: ", string(optJson))
+		glg.Info("options: ", string(optJson))
 
 		// init job
 		go diagTask.StartTaskJob(true)
-		go regist.StartRegistJob()
 		util.Sgo(devdis.Init, "init device discovery error")
 
 		// link
@@ -119,7 +122,11 @@ func main() {
 
 		// http server
 		r := gin.Default()
-		r.Use(api.CORSMiddleware()).Use(api.PrivateAccessMiddle())
+		r.Use(
+			api.CORSMiddleware(),
+			api.AuthMiddleware(),
+			// api.PrivateAccessMiddle(),
+		)
 		api.Route(r, webFS, swagFS)
 		r.Run(fmt.Sprintf(":%d", opt.Port))
 	} else if flag.Arg(0) == "version" {

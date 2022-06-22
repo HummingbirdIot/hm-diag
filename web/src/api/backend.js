@@ -1,5 +1,9 @@
 import http from "./http";
 
+export async function login(sec) {
+  return await http.post("/api/v1/login", sec);
+}
+
 export async function stateGet() {
   return await http.get("/inner/state");
 }
@@ -57,6 +61,10 @@ export async function logQuery(params) {
   return await http.get(url);
 }
 
+export async function networkTest() {
+  return await http.get("/inner/api/v1/network/ping");
+}
+
 // miner
 export async function minerRestart() {
   return await http.post("/api/v1/miner/restart");
@@ -98,4 +106,19 @@ export async function snapState() {
 
 export function snapDownload(fileName) {
   open(`/inner/api/v1/miner/snapshot/file/${fileName}`, "_blank");
+}
+
+
+//onboarding
+
+export async function checkOnboarding() {
+  const api = "/inner/api/v1/onboarding";
+  return await http.get(api);
+}
+
+//log
+export async function downloadLog() {
+  return await http.get("/inner/api/v1/log/download",{
+    responseType: 'blob'
+  });
 }

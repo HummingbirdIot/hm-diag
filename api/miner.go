@@ -2,13 +2,13 @@ package api
 
 import (
 	"encoding/base64"
-	"log"
 	"path"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/ctrl"
 	"xdt.com/hm-diag/diag"
 	"xdt.com/hm-diag/diag/miner"
@@ -46,14 +46,14 @@ func restartMiner(c *gin.Context) {
 
 func genOnboardingTxn(c *gin.Context) {
 	ownerAddr := c.Query("owner")
-	log.Println("to generate onboarding txn for owner:", ownerAddr)
+	glg.Info("to generate onboarding txn for owner:", ownerAddr)
 	if ownerAddr == "" {
 		c.JSON(400, RespBody{Code: 400, Message: "owner address must be provided"})
 		return
 	}
 	txn, err := ctrl.GenOnboardingTxn(ownerAddr, ctrl.MakerAddr)
 	if err != nil {
-		log.Println("generating onboarding txn error", err)
+		glg.Error("generating onboarding txn error", err)
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 		return
 	}
@@ -69,14 +69,14 @@ func genAssertLocationTxn(c *gin.Context) {
 	if err != nil {
 		nonce = 1
 	}
-	log.Printf("to generate assert location txn for owner: %s, payer: %s", ownerAddr, payerAddr)
+	glg.Infof("to generate assert location txn for owner: %s, payer: %s", ownerAddr, payerAddr)
 	if ownerAddr == "" || payerAddr == "" || location == "" {
 		c.JSON(400, RespBody{Code: 400, Message: "owner, payer and h3 must be provided"})
 		return
 	}
 	txn, err := ctrl.GenAssertLocationTxn(ownerAddr, payerAddr, location, nonce)
 	if err != nil {
-		log.Println("generating assert location txn error:", err)
+		glg.Info("generating assert location txn error:", err)
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 		return
 	}
@@ -84,16 +84,16 @@ func genAssertLocationTxn(c *gin.Context) {
 }
 
 func snapshotTake(c *gin.Context) {
-	log.Println("to snapshot")
+	glg.Debug("to snapshot")
 	ctrl.SnapshotTake()
 	c.JSON(200, RespOK(nil))
 }
 
 func snapshotState(c *gin.Context) {
-	log.Println("to get snapshot state")
+	glg.Debug("to get snapshot state")
 	res, err := ctrl.SnapshotState()
 	if err != nil {
-		log.Printf("get snapshot state error: %+v\n", err)
+		glg.Errorf("get snapshot state error: %+v\n", err)
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 	} else {
 		c.JSON(200, RespOK(res))
@@ -101,17 +101,17 @@ func snapshotState(c *gin.Context) {
 }
 
 func snapshotDownload(c *gin.Context) {
-	log.Println("to get snapshot file")
+	glg.Debug("to get snapshot file")
 	f := c.Param("name")
 	b, err := base64.StdEncoding.DecodeString(f)
 	if err != nil {
-		log.Println("get snapshot, wrong path param", f)
+		glg.Errorf("get snapshot, wrong path param", f)
 		c.JSON(400, RespBody{Code: 400, Message: "wrong path param"})
 		return
 	}
 	f = string(b)
 	if !strings.HasPrefix(f, "/tmp/") {
-		log.Println("get snapshot, wrong path param", f)
+		glg.Errorf("get snapshot, wrong path param", f)
 		c.JSON(400, RespBody{Code: 400, Message: "wrong path param"})
 		return
 	}
@@ -120,10 +120,10 @@ func snapshotDownload(c *gin.Context) {
 }
 
 func snapshotApply(c *gin.Context) {
-	log.Println("to apply snapshot")
+	glg.Debug("to apply snapshot")
 	f, err := c.FormFile("file")
 	if err != nil {
-		log.Println("get form file error", err)
+		glg.Errorf("get form file error", err)
 		c.JSON(400, RespBody{
 			Code:    400,
 			Message: err.Error(),

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/url"
 	"os"
 	"os/exec"
@@ -13,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/kpango/glg"
 	"github.com/pkg/errors"
 	"xdt.com/hm-diag/config"
 )
@@ -37,7 +37,7 @@ type ProxyConf struct {
 func init() {
 	err := os.MkdirAll(config.ETC_DIR, os.ModeDir)
 	if err != nil {
-		log.Fatalln(errors.WithMessage(err, "create hm-diag etc dir error"))
+		glg.Fatalln(errors.WithMessage(err, "create hm-diag etc dir error"))
 	}
 }
 
@@ -45,7 +45,7 @@ func SetRepoMirrorProxy(repoDir string, proxy ProxyItem) error {
 	// check params
 	if proxy.Type != MIRROR {
 		msg := "can't set proxy type " + string(proxy.Type) + " other than type 'mirror'"
-		log.Println(msg)
+		glg.Info(msg)
 		return fmt.Errorf(msg)
 	}
 
@@ -84,7 +84,7 @@ func setWorkspaceGitMirrorProxy(repoDir string, proxy ProxyItem) error {
 	if err != nil {
 		return err
 	}
-	log.Println("git config list url insteadof output:\n", str)
+	glg.Info("git config list url insteadof output:\n", str)
 
 	if str != "" {
 		strArr := strings.Split(str, "=")
@@ -98,7 +98,7 @@ func setWorkspaceGitMirrorProxy(repoDir string, proxy ProxyItem) error {
 			return err
 		}
 		str = string(buf)
-		log.Println("git config unset url insteadof output:\n", str)
+		glg.Info("git config unset url insteadof output:\n", str)
 	}
 
 	// set url insteadof
@@ -112,7 +112,7 @@ func setWorkspaceGitMirrorProxy(repoDir string, proxy ProxyItem) error {
 		return err
 	}
 	str = string(buf)
-	log.Println("git config set url insteadof output:\n", str)
+	glg.Info("git config set url insteadof output:\n", str)
 	return nil
 }
 
@@ -139,12 +139,12 @@ func SetReleaseFileProxy(repoDir string, proxy ProxyItem) error {
 	if err != nil {
 		return err
 	}
-	log.Println("writen config into file:", confFilePath)
+	glg.Info("writen config into file:", confFilePath)
 
 	// save to etc file
 	err = os.WriteFile(config.PROXY_ETC_RELEASE, proxyConfBuf, 0664)
 	if err != nil {
-		log.Println("save release file proxy to config file error")
+		glg.Error("save release file proxy to config file error")
 	}
 
 	return nil
@@ -201,13 +201,13 @@ func ReleaseFileProxy(repoDir string) (*ProxyItem, error) {
 		}
 		var item ProxyConf
 		err = json.Unmarshal(buf, &item)
-		log.Println("read proxy config", string(buf))
+		glg.Debug("read proxy config", string(buf))
 		if err != nil {
 			return nil, err
 		}
 		return &item.ReleaseFileProxy, nil
 	} else {
-		log.Println("read file.........err", err)
+		glg.Error("read file.........err", err)
 		return nil, nil
 	}
 }
@@ -239,7 +239,7 @@ func gitRepoMirrorConf(repoDir string) (string, error) {
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
 			// ignore
 		} else {
-			log.Println("git config list url insteadof error:", reflect.TypeOf(err))
+			glg.Error("git config list url insteadof error:", reflect.TypeOf(err))
 			return "", err
 		}
 	}
@@ -248,7 +248,7 @@ func gitRepoMirrorConf(repoDir string) (string, error) {
 
 func copyGitRepoProxy() error {
 	if _, err := os.Stat(config.PROXY_ETC_REPO); err != nil {
-		log.Println("no git repo proxy config to copy")
+		glg.Info("no git repo proxy config to copy")
 		return nil
 	}
 	buf, err := os.ReadFile(config.PROXY_ETC_REPO)
@@ -271,7 +271,7 @@ func copyGitRepoProxy() error {
 
 func copyGitReleaseProxy() error {
 	if _, err := os.Stat(config.PROXY_ETC_RELEASE); err != nil {
-		log.Println("no git release proxy config to copy")
+		glg.Info("no git release proxy config to copy")
 		return nil
 	}
 	buf, err := ioutil.ReadFile(config.PROXY_ETC_RELEASE)

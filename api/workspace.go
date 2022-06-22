@@ -1,9 +1,8 @@
 package api
 
 import (
-	"log"
-
 	"github.com/gin-gonic/gin"
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/ctrl"
 )
 
@@ -15,7 +14,7 @@ func dockerReset(c *gin.Context) {
 func workspaceReset(c *gin.Context) {
 	err := ctrl.GitRepoReset()
 	if err != nil {
-		log.Println(err)
+		glg.Error(err)
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 	} else {
 		c.JSON(200, RespOK(nil))

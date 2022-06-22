@@ -2,9 +2,9 @@ package api
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/ctrl"
 	"xdt.com/hm-diag/util"
@@ -47,7 +47,7 @@ func gitProxySet(c *gin.Context) {
 		err = ctrl.SetReleaseFileProxy(conf.GitRepoDir, proxyItem)
 	}
 	if err != nil {
-		log.Println(err)
+		glg.Error(err)
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 	} else {
 		c.JSON(200, RespOK(nil))
@@ -58,7 +58,7 @@ func heliumApiProxy(c *gin.Context) {
 	path := c.Query("path")
 	s, err := util.HeliumApiProxy(path)
 	if err != nil {
-		log.Printf("helium proxy apt %s error: %s", path, err)
+		glg.Errorf("helium proxy apt %s error: %s", path, err)
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 	} else {
 		c.JSON(200, RespOK(s))

@@ -3,14 +3,20 @@ package link
 import (
 	"context"
 	"fmt"
-	"log"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/kpango/glg"
 	"github.com/pkg/errors"
+)
+
+var (
+	connCtx       context.Context
+	connCtxCancel context.CancelFunc
 )
 
 type Closehandler func(code int, text string) error
@@ -45,7 +51,13 @@ func NewConn(conf ConnConfig) (*UplinkConn, error) {
 }
 
 func (c *UplinkConn) Start(ctx context.Context) error {
-	return c.connect(ctx)
+	err := c.connect(ctx)
+	if err != nil {
+		return err
+	}
+	go c.keepPing(ctx)
+	return nil
+
 }
 
 func (c *UplinkConn) Close() {
@@ -88,10 +100,10 @@ func (c *UplinkConn) Connected() bool {
 func (c *UplinkConn) connect(ctx context.Context) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	fmt.Println("ws server: " + c.config.server)
+	glg.Info("ws server: " + c.config.server)
 	wsConn, resp, err := websocket.DefaultDialer.Dial(c.config.server, c.config.header)
 	if err != nil {
-		fmt.Println("connect ws server error: ", err)
+		glg.Error("connect ws server error: ", err)
 		c.httpResp = resp
 		c.connectErr = err
 		return errors.WithMessage(err, "dial connection")
@@ -100,58 +112,57 @@ func (c *UplinkConn) connect(ctx context.Context) error {
 		return c.wsCloseHandler(ctx, code, text)
 	})
 	wsConn.SetPongHandler(func(d string) error {
-		log.Println("got pong", d)
+		glg.Debug("got pong", d)
 		return nil
 	})
 
 	c.connected = true
 	c.ws = wsConn
-	go c.keepPing(ctx)
-	go c.onConnectHandler(ctx)
-
+	connCtx, connCtxCancel = context.WithCancel(ctx)
+	//connect 函数内的协程都有connCtx管理，属于ctx下的context（context销毁时子context也会销毁）
+	go c.onConnectHandler(connCtx)
 	return nil
 }
 
 //ping
 func (c *UplinkConn) keepPing(ctx context.Context) {
 	// Keep connection alive
-	log.Println("ws connection keep ping start")
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	intervalTime := 30 + r.Intn(10) + r.Intn(3)*10
+	glg.Info("ws connection keep ping start interval : ", intervalTime)
+
 	for {
 		select {
 		case <-ctx.Done():
-			log.Println("kepp ping break case context done")
+			glg.Warn("kepp ping break case context done")
 			return
-		case <-time.After(30 * time.Second):
-		}
-
-		time.Sleep(30 * time.Second)
-		ctx.Done()
-		log.Println("ping ws server:", c.config.server)
-		err := c.ws.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second))
-		if err != nil {
-			log.Println("ws connection ping error", err)
-			c.ws.Close()
+		case <-time.After(time.Duration(intervalTime) * time.Second):
+			glg.Debug("ping ws server:", c.config.server)
+			err := c.ws.WriteControl(websocket.PingMessage, []byte{}, time.Now().Add(time.Second))
+			if err != nil {
+				glg.Error("ws connection ping error", err)
+				c.wsCloseHandler(ctx, 1006, err.Error())
+			}
 		}
 	}
 }
 
 //ws关闭时处理函数
 func (c *UplinkConn) wsCloseHandler(ctx context.Context, code int, text string) error {
-	log.Printf("ws closed, code: %d, text: %s", code, text)
+	glg.Info("ws closed, code: %d, text: %s", code, text)
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.connected = false
-	preLinkCtxCancel()
-	preLinkCtxCancel = nil
+	c.ws.Close()
+	connCtxCancel()
 	if c.config.autoReconnect {
-		for {
-			time.Sleep(60 * time.Second)
-			err := c.reconnect(context.Background())
-			if err == nil {
-				fmt.Println("reconnect successful")
-				return nil
+		go func() {
+			err := c.reconnect(ctx)
+			if err != nil {
+				glg.Error("reconnect error : ", err)
 			}
-		}
+			return
+		}()
 	}
 	if c.onCloseHandler != nil {
 		c.onCloseHandler(code, text)
@@ -162,7 +173,7 @@ func (c *UplinkConn) wsCloseHandler(ctx context.Context, code int, text string) 
 //ws重连
 func (c *UplinkConn) reconnect(ctx context.Context) error {
 	// TODO: reconnect
-	log.Println("reconnect...")
-	err := Start(ctx)
+	glg.Info("reconnect...")
+	err := c.connect(ctx)
 	return err
 }

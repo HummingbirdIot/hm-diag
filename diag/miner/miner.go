@@ -3,12 +3,12 @@ package miner
 import (
 	_ "embed"
 	"fmt"
-	"log"
 	"os/exec"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag/jsonrpc"
 	"xdt.com/hm-diag/util"
@@ -101,7 +101,7 @@ func FetchData(url string) map[string]interface{} {
 
 	baseInfo, err := HotspotBaseInfo()
 	if err != nil {
-		log.Println("get hotspot base info error:", err)
+		glg.Error("get hotspot base info error:", err)
 	}
 
 	infoSummary := map[string]interface{}{
@@ -122,10 +122,16 @@ func FetchData(url string) map[string]interface{} {
 		upsec := int64(uptime.Seconds())
 		infoSummary["uptime"] = upsec
 	} else {
-		log.Println("get miner uptime error:", err)
+		glg.Error("get miner uptime error:", err)
 	}
 
 	return resMap
+}
+
+func GetPeerAddr(url string) string {
+	client := &jsonrpc.Client{Url: url}
+	res, _ := client.Call("peer_addr", nil)
+	return res.(map[string]interface{})["peer_addr"].(string)
 }
 
 func FirmwareVersion() (string, error) {
@@ -163,7 +169,7 @@ func Uptime() (time.Duration, error) {
 			str = str[:19] // remove ms、zone
 			t, err := util.ParseTimeInLocation("UTC", "2006-01-02T15:04:05", str)
 			if err != nil {
-				log.Println("get miner start time error", err)
+				glg.Error("get miner start time error", err)
 				return 0, err
 			} else {
 				startedAt = t
@@ -177,7 +183,7 @@ func Uptime() (time.Duration, error) {
 
 func PacketForwardVersion() (string, error) {
 	resultPre := ">>>result:"
-	log.Println("exec cmd:", config.MAIN_SCRIPT, "pktfwdVersion")
+	glg.Debug("exec cmd:", config.MAIN_SCRIPT, "pktfwdVersion")
 	cmd := exec.Command(config.MAIN_SCRIPT, "pktfwdVersion")
 	cmd.Dir = config.Config().GitRepoDir
 	out, err := cmd.Output()
