@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	getGatewayCmd = "route -n | awk '$4 == \"UG\" {print $2}'"
+	getGatewayCmd = "route -n | awk '{if ($4 == \"UG\") {print $2}}'"
 	GatewayAddr   string
 )
 
