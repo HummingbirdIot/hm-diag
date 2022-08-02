@@ -29,7 +29,7 @@
         >True</Tag>
         <Tag v-else type="warning">False</Tag>
       </Cell>
-      <Cell title="Miner Relayed">
+      <Cell title="Miner Relayed" v-if="data?.miner?.infoP2pStatus?.natType">
         <Tag v-if="data?.miner?.infoP2pStatus?.natType == 'symmetric'" type="warning">True</Tag>
         <Tag v-else type="success">False</Tag>
       </Cell>

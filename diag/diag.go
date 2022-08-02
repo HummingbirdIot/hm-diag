@@ -13,8 +13,9 @@ import (
 )
 
 type TaskConfig struct {
-	MinerUrl    string
-	IntervalSec uint
+	MinerUrl     string
+	MinerGrpcUrl string
+	IntervalSec  uint
 }
 
 type Task struct {
@@ -38,7 +39,7 @@ type AllStateInfo struct {
 var taskSingleton *Task
 
 func InitTask(conf config.GlobalConfig) {
-	taskSingleton = &Task{Config: TaskConfig{MinerUrl: conf.MinerUrl, IntervalSec: conf.IntervalSec}}
+	taskSingleton = &Task{Config: TaskConfig{MinerUrl: conf.MinerUrl, IntervalSec: conf.IntervalSec, MinerGrpcUrl: conf.MinerGrpcUrl}}
 }
 
 func TaskInstance() *Task {
@@ -101,7 +102,7 @@ func (t *Task) Do() {
 	glg.Debug("to do task...")
 	resMap := make(map[string]interface{})
 
-	m := miner.FetchData(t.Config.MinerUrl)
+	m := miner.FetchData(t.Config.MinerUrl, t.Config.MinerGrpcUrl)
 	resMap["miner"] = m
 
 	resMap["device"] = t.FetchDeviceInfo()
@@ -131,7 +132,7 @@ func (t *Task) Do() {
 }
 
 func (t *Task) FetchMinerInfo() map[string]interface{} {
-	return miner.FetchData(t.Config.MinerUrl)
+	return miner.FetchData(t.Config.MinerUrl, t.Config.MinerGrpcUrl)
 }
 
 func (t *Task) FetchDeviceInfo() map[string]interface{} {

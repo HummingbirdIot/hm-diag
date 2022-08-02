@@ -10,6 +10,7 @@ import (
 
 	"github.com/kpango/glg"
 	"xdt.com/hm-diag/config"
+	"xdt.com/hm-diag/diag/grpc"
 	"xdt.com/hm-diag/diag/jsonrpc"
 	"xdt.com/hm-diag/util"
 )
@@ -68,25 +69,32 @@ type BaseInfo struct {
 	Location string `json:"location"`
 }
 
-func FetchData(url string) map[string]interface{} {
+func FetchData(url string, grpcUri string) map[string]interface{} {
 	// TODO 去掉 map，采用强类型
 
 	client := &jsonrpc.Client{Url: url}
 	resMap := make(map[string]interface{})
-	res, _ := client.Call("info_height", nil)
-	resMap["infoHeight"] = res.(map[string]interface{})["height"]
 
-	res, _ = client.Call("info_region", nil)
+	if config.Config().LightHotspot { //是否是轻节点
+		grpcClient := &grpc.Client{Url: grpcUri}
+		height, _ := grpcClient.Height()
+		resMap["infoHeight"] = height
+	} else {
+		res, _ := client.Call("peer_book", PeerBookParams{Addr: "self"})
+		resMap["peerBook"] = util.ToLowerCamelObj(res)
+
+		res, _ = client.Call("info_p2p_status", nil)
+		resMap["infoP2pStatus"] = util.ToLowerCamelObj(res)
+
+		res, _ = client.Call("info_height", nil)
+		resMap["infoHeight"] = res.(map[string]interface{})["height"]
+	}
+
+	res, _ := client.Call("info_region", nil)
 	resMap["infoRegion"] = res.(map[string]interface{})["region"]
 
 	res, _ = client.Call("peer_addr", nil)
 	resMap["peerAddr"] = res.(map[string]interface{})["peer_addr"]
-
-	res, _ = client.Call("peer_book", PeerBookParams{Addr: "self"})
-	resMap["peerBook"] = util.ToLowerCamelObj(res)
-
-	res, _ = client.Call("info_p2p_status", nil)
-	resMap["infoP2pStatus"] = util.ToLowerCamelObj(res)
 
 	//res, _ = client.Call("info_summary", nil)
 	//resMap["infoSummary"] = util.ToLowerCamelObj(res)

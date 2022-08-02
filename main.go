@@ -47,6 +47,8 @@ type Opt struct {
 	GitRepoDir    string
 	LanDevIntface string
 	Verbose       bool
+	MinerGrpcUrl  string
+	LightHotspot  bool
 }
 
 var opt Opt
@@ -68,11 +70,13 @@ func init() {
 	flag.IntVar(&opt.Port, "p", 8090, "server listening port")
 	flag.StringVar(&opt.LanDevIntface, "lan", "eth0", "lan device discovery net interface")
 	flag.StringVar(&opt.MinerUrl, "m", "http://127.0.0.1:4467", "miner http url")
+	flag.StringVar(&opt.MinerGrpcUrl, "mGrpc", "127.0.0.1:4468", "miner grpc url")
 	flag.StringVar(&opt.GitRepoDir, "gitRepo",
 		"/home/pi/hnt_iot", "program docker-compose working git dir")
 	flag.StringVar(&opt.GitRepoUrl, "gitRepoUrl",
 		"https://github.com/HummingbirdIot/hnt_iot_release.git", "hnt iot git url")
 	flag.UintVar(&opt.IntervalSec, "i", 30, "data refresh interval in seconds")
+	flag.BoolVar(&opt.LightHotspot, "light", true, "is light hotspot")
 	flag.BoolVar(&opt.Verbose, "v", false, "verbose log")
 	flag.Usage = usage
 
@@ -85,6 +89,8 @@ func init() {
 		GitRepoDir:    opt.GitRepoDir,
 		GitRepoUrl:    opt.GitRepoUrl,
 		IntervalSec:   opt.IntervalSec,
+		MinerGrpcUrl:  opt.MinerGrpcUrl,
+		LightHotspot:  opt.LightHotspot,
 	})
 }
 

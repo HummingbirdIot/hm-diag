@@ -27,6 +27,8 @@ type GlobalConfig struct {
 	PublicAccess      CONF_BOOL
 	Password          string
 	DashboardPassword bool
+	MinerGrpcUrl      string
+	LightHotspot      bool
 }
 
 type ConfiFileData struct {
