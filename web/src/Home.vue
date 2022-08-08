@@ -22,9 +22,9 @@
       <Cell title="Miner Version">{{ data?.miner?.infoSummary?.version }}</Cell>
       <Cell title="Firmware Version">{{ firmwareVersion }}</Cell>
       <Cell title="Region Plan">{{ region }}</Cell>
-      <Cell title="Miner Connected to Blockchain">
+      <Cell title="Miner Connected to Blockchain" :label=data?.miner?.gatewayInfo?.gateway.uri>
         <Tag
-          v-if="data?.miner?.peerBook?.length > 0 && data?.miner?.peerBook[0]?.connectionCount > 0"
+          v-if="data?.miner?.peerBook?.length > 0 && data?.miner?.peerBook[0]?.connectionCount > 0 || data?.miner?.gatewayInfo?.gateway.uri"
           type="success"
         >True</Tag>
         <Tag v-else type="warning">False</Tag>

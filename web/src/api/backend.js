@@ -94,19 +94,19 @@ export async function workspaceReset() {
 
 // snapshot
 
-export async function snap() {
-  const api = "/inner/api/v1/miner/snapshot";
-  return await http.post(api);
-}
+// export async function snap() {
+//   const api = "/inner/api/v1/miner/snapshot";
+//   return await http.post(api);
+// }
 
-export async function snapState() {
-  const api = "/inner/api/v1/miner/snapshot/state";
-  return await http.get(api);
-}
+// export async function snapState() {
+//   const api = "/inner/api/v1/miner/snapshot/state";
+//   return await http.get(api);
+// }
 
-export function snapDownload(fileName) {
-  open(`/inner/api/v1/miner/snapshot/file/${fileName}`, "_blank");
-}
+// export function snapDownload(fileName) {
+//   open(`/inner/api/v1/miner/snapshot/file/${fileName}`, "_blank");
+// }
 
 
 //onboarding

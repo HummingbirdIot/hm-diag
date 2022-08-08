@@ -77,8 +77,11 @@ func FetchData(url string, grpcUri string) map[string]interface{} {
 
 	if config.Config().LightHotspot { //是否是轻节点
 		grpcClient := &grpc.Client{Url: grpcUri}
-		height, _ := grpcClient.Height()
-		resMap["infoHeight"] = height
+		info, _ := grpcClient.GatewayInfo()
+		glg.Debug("from grpc get hotspot height:", info.Height)
+		resMap["infoHeight"] = info.Height
+
+		resMap["gatewayInfo"] = info
 	} else {
 		res, _ := client.Call("peer_book", PeerBookParams{Addr: "self"})
 		resMap["peerBook"] = util.ToLowerCamelObj(res)

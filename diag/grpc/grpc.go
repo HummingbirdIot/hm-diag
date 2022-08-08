@@ -14,12 +14,12 @@ type Client struct {
 	Url string
 }
 
-func (c Client) Height() (res uint64, err error) {
+func (c Client) GatewayInfo() (res *pb.HeightRes, err error) {
 	glg.Info("grpc URL: ", c.Url)
 	conn, err := grpc.Dial(c.Url, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		glg.Errorf("did not connect: %v", err)
-		return 0, err
+		return nil, err
 	}
 	defer conn.Close()
 	co := pb.NewApiClient(conn)
@@ -29,7 +29,9 @@ func (c Client) Height() (res uint64, err error) {
 	r, err := co.Height(ctx, &pb.HeightReq{})
 	if err != nil {
 		glg.Errorf("could not greet: %v", err)
-		return 0, err
+		return nil, err
 	}
-	return r.Height, nil
+	glg.Infof("%+v", r)
+	glg.Info(string(r.Gateway.Address))
+	return r, nil
 }
