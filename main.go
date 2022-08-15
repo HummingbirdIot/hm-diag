@@ -12,12 +12,12 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/api"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/devdis"
 	"xdt.com/hm-diag/diag"
 	"xdt.com/hm-diag/link"
-	"xdt.com/hm-diag/regist"
 	"xdt.com/hm-diag/util"
 )
 
@@ -47,6 +47,8 @@ type Opt struct {
 	GitRepoDir    string
 	LanDevIntface string
 	Verbose       bool
+	MinerGrpcUrl  string
+	LightHotspot  bool
 }
 
 var opt Opt
@@ -68,11 +70,13 @@ func init() {
 	flag.IntVar(&opt.Port, "p", 8090, "server listening port")
 	flag.StringVar(&opt.LanDevIntface, "lan", "eth0", "lan device discovery net interface")
 	flag.StringVar(&opt.MinerUrl, "m", "http://127.0.0.1:4467", "miner http url")
+	flag.StringVar(&opt.MinerGrpcUrl, "mGrpc", "127.0.0.1:4468", "miner grpc url")
 	flag.StringVar(&opt.GitRepoDir, "gitRepo",
 		"/home/pi/hnt_iot", "program docker-compose working git dir")
 	flag.StringVar(&opt.GitRepoUrl, "gitRepoUrl",
 		"https://github.com/HummingbirdIot/hnt_iot_release.git", "hnt iot git url")
 	flag.UintVar(&opt.IntervalSec, "i", 30, "data refresh interval in seconds")
+	flag.BoolVar(&opt.LightHotspot, "light", true, "is light hotspot")
 	flag.BoolVar(&opt.Verbose, "v", false, "verbose log")
 	flag.Usage = usage
 
@@ -85,6 +89,8 @@ func init() {
 		GitRepoDir:    opt.GitRepoDir,
 		GitRepoUrl:    opt.GitRepoUrl,
 		IntervalSec:   opt.IntervalSec,
+		MinerGrpcUrl:  opt.MinerGrpcUrl,
+		LightHotspot:  opt.LightHotspot,
 	})
 }
 
@@ -94,10 +100,13 @@ func setVersion() {
 }
 
 func main() {
+	glg.Get().SetLineTraceMode(glg.TraceLineLong)
+
 	diag.InitTask(*config.Config())
 	diagTask := diag.TaskInstance()
 	rootCtx := context.Background()
 	if flag.Arg(0) == "get" {
+		glg.Info(opt.Verbose)
 		if !opt.Verbose {
 			log.SetOutput(io.Discard)
 		}
@@ -106,12 +115,12 @@ func main() {
 		os.Stdout.WriteString(string(s))
 		return
 	} else if flag.Arg(0) == "server" || flag.Arg(0) == "" {
+		link.InitClientConfig()
 		optJson, _ := json.Marshal(opt)
-		log.Println("options: ", string(optJson))
+		glg.Info("options: ", string(optJson))
 
 		// init job
 		go diagTask.StartTaskJob(true)
-		go regist.StartRegistJob()
 		util.Sgo(devdis.Init, "init device discovery error")
 
 		// link
@@ -119,7 +128,11 @@ func main() {
 
 		// http server
 		r := gin.Default()
-		r.Use(api.CORSMiddleware()).Use(api.PrivateAccessMiddle())
+		r.Use(
+			api.CORSMiddleware(),
+			api.AuthMiddleware(),
+			// api.PrivateAccessMiddle(),
+		)
 		api.Route(r, webFS, swagFS)
 		r.Run(fmt.Sprintf(":%d", opt.Port))
 	} else if flag.Arg(0) == "version" {

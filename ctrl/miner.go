@@ -2,17 +2,18 @@ package ctrl
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/kpango/glg"
 	"github.com/pkg/errors"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag/jsonrpc"
@@ -28,43 +29,57 @@ const (
 	restartMinerCmd  = config.MAIN_SCRIPT + " restartMiner"
 )
 
+var (
+	onboardingCmd = "docker exec hnt_iot_helium-miner_1 /opt/miner/lib/miner-0.1.0/priv/gateway_rs/helium_gateway -c /opt/miner/lib/miner-0.1.0/priv/gateway_rs/ add --owner {owner} --payer {payer} --mode light"
+)
+
 type SnapshotStateRes struct {
 	File  string    `json:"file"`
 	State string    `json:"state"`
 	Time  time.Time `json:"time"`
 }
 
+type onboardingCliResp struct {
+	Address     string `json:"address"`
+	Fee         int64  `json:"fee"`
+	Mode        string `json:"mode"`
+	Owner       string `json:"owner"`
+	Payer       string `json:"payer"`
+	Staking_fee int64  `json:"staking fee"`
+	Txn         string `json:"txn"`
+}
+
 func ResyncMiner() error {
-	log.Println("to resync miner")
-	log.Println("exec cmd: bash", resyncMinerCmd)
+	glg.Info("to resync miner")
+	glg.Debug("exec cmd: bash", resyncMinerCmd)
 	cmd := exec.Command("bash", resyncMinerCmd)
 	cmd.Dir = config.Config().GitRepoDir
 	data, err := cmd.Output()
 	if err != nil {
-		log.Println("[error] resync miner error:", err.Error(), string(data))
+		glg.Error("[error] resync miner error:", err.Error(), string(data))
 		return err
 	}
-	log.Println("resync miner output:", string(data))
+	glg.Info("resync miner output:", string(data))
 	return nil
 }
 
 func RestartMiner() error {
-	log.Println("to restart miner")
-	log.Println("exec cmd:", restartMinerCmd)
+	glg.Info("to restart miner")
+	glg.Debug("exec cmd:", restartMinerCmd)
 	cmd := exec.Command("bash", strings.Split(restartMinerCmd, " ")...)
 	cmd.Dir = config.Config().GitRepoDir
 	data, err := cmd.Output()
 	if err != nil {
-		log.Println("[error] restart miner error:", err.Error(), string(data))
+		glg.Error("[error] restart miner error:", err.Error(), string(data))
 		return err
 	}
-	log.Println("restart miner output:", string(data))
+	glg.Info("restart miner output:", string(data))
 	return nil
 }
 
 func SnapshotTake() {
 	fn := func() error {
-		log.Println("spawn cmd: bash ", snapshotTakeCmd)
+		glg.Debug("spawn cmd: bash ", snapshotTakeCmd)
 		cmd := exec.Command("bash", strings.Split(snapshotTakeCmd, " ")...)
 		cmd.Dir = config.Config().GitRepoDir
 		p, err := cmd.StdoutPipe()
@@ -82,11 +97,11 @@ func SnapshotTake() {
 			err = errIn
 			if err == nil {
 				s := string(ln)
-				log.Println("snapshot cmd output:", s)
+				glg.Debug("snapshot cmd output:", s)
 			} else if err == io.EOF {
 				break
 			} else {
-				log.Println("read snapshot cmd ouput error:", err.Error())
+				glg.Error("read snapshot cmd ouput error:", err.Error())
 			}
 		}
 
@@ -102,7 +117,7 @@ func SnapshotTake() {
 func SnapshotState() (*SnapshotStateRes, error) {
 	var result SnapshotStateRes
 	resPrefix := ">>>state:"
-	log.Println("spawn cmd:", snapshotStateCmd)
+	glg.Debug("spawn cmd:", snapshotStateCmd)
 	cmd := exec.Command("bash", strings.Split(snapshotStateCmd, " ")...)
 	cmd.Dir = config.Config().GitRepoDir
 	p, err := cmd.StdoutPipe()
@@ -120,7 +135,7 @@ func SnapshotState() (*SnapshotStateRes, error) {
 		err = errIn
 		if err == nil {
 			s := string(ln)
-			log.Println("snapshot state cmd output:", s)
+			glg.Debug("snapshot state cmd output:", s)
 			if strings.HasPrefix(s, resPrefix) {
 				s = strings.TrimPrefix(s, resPrefix)
 				result, err = parseSnapshotStateResult(s)
@@ -131,7 +146,7 @@ func SnapshotState() (*SnapshotStateRes, error) {
 		} else if err == io.EOF {
 			break
 		} else {
-			log.Println("read snapshot state cmd ouput error:", err.Error())
+			glg.Error("read snapshot state cmd ouput error:", err.Error())
 		}
 	}
 
@@ -169,7 +184,7 @@ func parseSnapshotStateResult(s string) (SnapshotStateRes, error) {
 
 func SnapshotLoad(file string) {
 	fn := func() error {
-		log.Println("exec cmd: bash " + snapshotLoadCmd + " " + file)
+		glg.Debug("exec cmd: bash " + snapshotLoadCmd + " " + file)
 		cmd := exec.Command("bash", snapshotLoadCmd, file)
 		cmd.Dir = config.Config().GitRepoDir
 		p, err := cmd.StdoutPipe()
@@ -187,11 +202,11 @@ func SnapshotLoad(file string) {
 			err = errIn
 			if err == nil {
 				s := string(ln)
-				log.Println("snapshot load cmd output:", s)
+				glg.Info("snapshot load cmd output:", s)
 			} else if err == io.EOF {
 				break
 			} else {
-				log.Println("read snapshot load cmd ouput error:", err.Error())
+				glg.Error("read snapshot load cmd ouput error:", err.Error())
 			}
 		}
 
@@ -208,24 +223,41 @@ func GenOnboardingTxn(ownerAddr string, payerAddr string) (string, error) {
 	if ownerAddr == "" || payerAddr == "" {
 		return "", fmt.Errorf("ownerAddr and payerAddr must be provided")
 	}
-	jrClient := jsonrpc.Client{Url: config.Config().MinerUrl}
-
-	re, err := jrClient.Call("txn_add_gateway", map[string]string{
-		"owner": ownerAddr,
-		"payer": payerAddr,
-	})
+	glg.Info(ownerAddr, payerAddr)
+	var out bytes.Buffer
+	onboardingCmd = strings.Replace(onboardingCmd, "{owner}", ownerAddr, 1)
+	onboardingCmd = strings.Replace(onboardingCmd, "{payer}", payerAddr, 1)
+	cmd := exec.Command("bash", "-c", onboardingCmd)
+	cmd.Stdout = &out
+	err := cmd.Run()
 	if err != nil {
 		return "", err
 	}
-	result, ok := re.(map[string]interface{})
-	if !ok {
-		return "", fmt.Errorf("miner txn add gateway request result error: %#v", re)
+	var resp onboardingCliResp
+	err = json.NewDecoder(&out).Decode(&resp)
+	if err != nil {
+		return "", err
 	}
-	txn, ok := result["result"].(string)
-	if !ok {
-		return "", fmt.Errorf("miner txn add gateway request result error: %#v", result)
-	}
-	return txn, nil
+	glg.Infof("%+v", resp)
+	return resp.Txn, nil
+	// jrClient := jsonrpc.Client{Url: config.Config().MinerUrl}
+
+	// re, err := jrClient.Call("txn_add_gateway", map[string]string{
+	// 	"owner": ownerAddr,
+	// 	"payer": payerAddr,
+	// })
+	// if err != nil {
+	// 	return "", err
+	// }
+	// result, ok := re.(map[string]interface{})
+	// if !ok {
+	// 	return "", fmt.Errorf("miner txn add gateway request result error: %#v", re)
+	// }
+	// txn, ok := result["result"].(string)
+	// if !ok {
+	// 	return "", fmt.Errorf("miner txn add gateway request result error: %#v", result)
+	// }
+	// return txn, nil
 }
 
 func GenAssertLocationTxn(ownerAddr, payerAddr, location string, nonce int) (string, error) {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 
+	"github.com/kpango/glg"
 	"github.com/pkg/errors"
 	"xdt.com/hm-diag/link/message"
 )
@@ -25,8 +25,8 @@ func newClient(config ClientConfig) (*Client, error) {
 }
 
 func (c *Client) Start(ctx context.Context) error {
-	if c.config.Secret == "" || c.config.Server == "" {
-		return fmt.Errorf("secret and server must be provided")
+	if c.config.Secret == "" || c.config.Server == "" || c.config.ID == "" {
+		return fmt.Errorf("secret and server and id must be provided")
 	}
 
 	if c.conn != nil {
@@ -51,7 +51,6 @@ func (c *Client) Start(ctx context.Context) error {
 	if err != nil {
 		return errors.WithMessage(err, "client start")
 	}
-	go c.read(ctx)
 	return nil
 }
 
@@ -60,10 +59,10 @@ func (c *Client) WriteMessage(msg interface{}) error {
 		return fmt.Errorf("connection is not established")
 	}
 	c.conn.mu.Lock()
+	defer c.conn.mu.Unlock()
 	err := c.conn.WriteJSON(msg)
-	c.conn.mu.Unlock()
 	if err != nil {
-		log.Println("error writing message: ", err)
+		glg.Error("error writing message: ", err)
 		fmt.Println(msg)
 		return err
 	}
@@ -71,30 +70,29 @@ func (c *Client) WriteMessage(msg interface{}) error {
 }
 
 func (c *Client) read(ctx context.Context) {
-	log.Println("started read message loop")
+	glg.Info("started read message loop")
 	// TODO: for error
 	for {
 		if !c.conn.Connected() {
-			log.Println("disconnected, give up reading")
+			glg.Warn("disconnected, give up reading")
 			break
 		}
 		if ctx.Err() != nil {
-			log.Println("break read message loop cause context:", ctx.Err())
+			glg.Error("break read message loop cause context:", ctx.Err())
 			break
 		}
 
-		log.Println("to read message ...")
+		glg.Info("to read message ...")
 		_, buf, err := c.conn.ReadMessage()
 		if err != nil {
-			log.Println("error reading message: ", err)
-			c.conn.wsCloseHandler(ctx, 1006, err.Error())
+			glg.Error("error reading message: ", err)
+			// c.conn.wsCloseHandler(ctx, 1006, err.Error())
 			break
 		} else {
-			// log.Println("go ws message:", string(buf))
 			var msg map[string]interface{}
 			err := json.Unmarshal(buf, &msg)
 			if err != nil {
-				log.Printf("invalid message: %s, err: %s", string(buf), err)
+				glg.Infof("invalid message: %s, err: %s", string(buf), err)
 				continue
 			}
 			// TODO: pool
@@ -106,33 +104,33 @@ func (c *Client) read(ctx context.Context) {
 func (c *Client) handleMessage(msg *map[string]interface{}, rawBuf []byte) {
 	t, err := message.Typeof(msg)
 	if err != nil {
-		log.Printf("unknown message type for %#v, error: %s\n", msg, err)
+		glg.Infof("unknown message type for %#v, error: %s\n", msg, err)
 	}
 	switch t {
 	case message.TYPE_HTTP_REQUEST:
 		var r message.HttpRequest
 		err := json.Unmarshal(rawBuf, &r)
 		if err != nil {
-			log.Println("invalid message for http request")
+			glg.Error("invalid message for http request")
 			return
 		}
 		c.handleRpcRequest(&r)
 	default:
-		log.Println("unknown message type:", t)
+		glg.Warn("unknown message type:", t)
 	}
 }
 
 func (c *Client) handleRpcRequest(r *message.HttpRequest) {
-	// log.Printf("handle message: %#v", r)
 	resp, err := requestLocal(r)
 	if err != nil {
-		log.Printf("do request error: %v", err)
+		glg.Error("do request error: %v", err)
 		return
 	}
 	c.WriteMessage(resp)
 }
 
 func (c *Client) onConnectHandler(ctx context.Context) error {
-	log.Println("in client onConnectHandler")
+	glg.Info("in client onConnectHandler")
+	go c.read(ctx)
 	return nil
 }

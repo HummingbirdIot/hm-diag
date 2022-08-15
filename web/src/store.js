@@ -35,8 +35,8 @@ const store = createStore({
       // server get remote ip is private ip
       if (state.envState.isViaPrivate) return true;
       // server config: can public access 
-      if (state.safeConf.publicAccess != null) {
-        return state.safeConf.publicAccess == 1;
+      if (state.safeConf.publicAccess == 1 ) {
+        return true;
       }
       // browser location address is private ip
       return store.state.isInLocal;

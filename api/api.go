@@ -1,18 +1,31 @@
 package api
 
 import (
+	"context"
 	"embed"
 	"encoding/json"
+	"io"
 	"io/fs"
-	"log"
 	"net/http"
+	"path"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/diag"
-	"xdt.com/hm-diag/regist"
+	"xdt.com/hm-diag/diag/device"
+	"xdt.com/hm-diag/diag/miner"
+	"xdt.com/hm-diag/diag/onboarding"
+	"xdt.com/hm-diag/link"
 	"xdt.com/hm-diag/util"
 )
+
+type onboardingCacheType struct {
+	onboarding bool
+	cached     bool
+	cacheDate  time.Time
+}
 
 type RespBody struct {
 	Data    interface{} `json:"data"`
@@ -20,18 +33,30 @@ type RespBody struct {
 	Message string      `json:"message"`
 }
 
+type PasswordBody struct {
+	Password    string `json:"password"`
+	NewPassword string `json:"newPassword"`
+}
+
+type ClientConfigBody struct {
+	Secret string `json:"secret"`
+	Server string `json:"server"`
+}
+
 func RespOK(data interface{}) RespBody {
 	return RespBody{Data: data, Code: 200, Message: "OK"}
 }
 
-var diagTask *diag.Task
-var register *regist.Register
-var webFS embed.FS
+var (
+	diagTask             *diag.Task
+	webFS                embed.FS
+	onboardingCache      onboardingCacheType
+	defaultCacheDuration = 30 //s
+)
 
 func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	webFS = webFiles
 	diagTask = diag.TaskInstance()
-	register = regist.Instance()
 
 	// web static files
 	d, _ := fs.Sub(webFS, "web/release")
@@ -226,14 +251,62 @@ func Route(r *gin.Engine, webFiles embed.FS, swagFiles embed.FS) {
 	//
 	// Responses:
 	//   200:AllState
-	r.GET("/inner/state", stateHandler)
+	r.GET("/inner/state", stateInnerHandler)
 
 	r.GET("/inner/api/v1/version", versionHandler)
+	r.GET("/inner/api/v1/onboarding", checkOnboarding)
 
 	// TODO remove this route after next two version
 	r.GET("/state", stateHandler)
-	r.GET("/inner/registInfo", registInfoHandler)
 	r.GET("/inner/api/v1/pktfwd/state", pktfwdVersion)
+	r.POST("/inner/api/v1/clientConfig", saveClientConfigHandle)
+
+	r.GET("/inner/api/v1/network/ping", networkTestHandler)
+	r.POST("/api/v1/login", loginHandler)
+	r.POST("/api/v1/password", passwordHandler)
+
+	r.GET("/inner/api/v1/log/download", downloadLogFile)
+}
+
+func checkOnboarding(c *gin.Context) {
+	//如果是已经boarding状态的话就缓存住，不每次都重新获取数据
+	if onboardingCache.onboarding {
+		c.JSON(200, RespOK(onboardingCache.onboarding))
+		return
+	}
+
+	expirationTime := onboardingCache.cacheDate.Add(time.Second * time.Duration(defaultCacheDuration))
+	//30秒内不重复调用外部api
+	if expirationTime.After(time.Now()) {
+		c.JSON(200, RespOK(onboardingCache.onboarding))
+		return
+	}
+	isOnboarding := onboarding.CheckOnboarding()
+	onboardingCache.onboarding = isOnboarding
+	onboardingCache.cacheDate = time.Now()
+	c.JSON(200, RespOK(isOnboarding))
+}
+
+func stateInnerHandler(c *gin.Context) {
+	v, err := miner.PacketForwardVersion()
+	if err != nil {
+		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+		return
+	}
+	var res map[string]interface{}
+	if c := c.Query("cache"); c == "true" {
+		res = diagTask.Data().Data
+		res["time"] = diagTask.Data().FetchTime
+		res["packetForwardVersion"] = v
+	} else {
+		res = map[string]interface{}{
+			"device":               diagTask.FetchDeviceInfo(),
+			"miner":                diagTask.FetchMinerInfo(),
+			"packetForwardVersion": v,
+		}
+	}
+	res["notice"] = `do not use this api path "/" to integrate, use api under path "api/"`
+	c.JSON(200, RespOK(res))
 }
 
 func stateHandler(c *gin.Context) {
@@ -251,13 +324,41 @@ func stateHandler(c *gin.Context) {
 	c.JSON(200, RespOK(res))
 }
 
-func registInfoHandler(c *gin.Context) {
-	d, err := register.GetRegistInfo()
+func saveClientConfigHandle(c *gin.Context) {
+	var conf ClientConfigBody
+	err := json.NewDecoder(c.Request.Body).Decode(&conf)
 	if err != nil {
-		c.JSON(500, RespBody{Code: 500, Message: "error: " + err.Error()})
-	} else {
-		c.JSON(200, RespOK(d))
+		glg.Error(err)
+		c.JSON(400, RespBody{Code: 400, Message: "invalid request body for config"})
+		return
 	}
+	existConfig, err := link.LoadClientConfig()
+	if err != nil {
+		glg.Error("get clientConfig error : ", err)
+		c.JSON(500, RespBody{Code: 500, Message: "get clientConfig error : " + err.Error()})
+		return
+	}
+	var newConfig link.ClientConfig
+	newConfig.ID = existConfig.ID
+	newConfig.Secret = conf.Secret
+	newConfig.Server = conf.Server
+	glg.Debug("to save clent config file, content: %#v", conf)
+	err = link.SaveClientConfig(newConfig)
+	if err != nil {
+		glg.Error("save clent config file error:", err)
+		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+		return
+	}
+	glg.Debug("saved client config file, content: %#v", newConfig)
+	glg.Debug("to reconnect link server: %#v", conf.Server)
+	err = link.Start(context.Background())
+	if err != nil {
+		glg.Error("reconnect link error : ", err)
+		c.JSON(500, RespBody{Code: 500, Message: "save client config successful, but reconnect error : " + err.Error()})
+		return
+	}
+	glg.Info("reconnected link server: %#v", conf.Server)
+	c.JSON(200, RespOK(nil))
 }
 
 func saveConfigHandle(c *gin.Context) {
@@ -267,25 +368,29 @@ func saveConfigHandle(c *gin.Context) {
 		c.JSON(400, RespBody{Code: 400, Message: "invalid request body for config"})
 		return
 	}
-	log.Printf("to save config file, content: %#v", conf)
+	glg.Debug("to save config file, content: %#v", conf)
 	err = config.SaveConfigFile(conf)
 	if err != nil {
-		log.Println("save config file error:", err)
+		glg.Error("save config file error:", err)
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 		return
 	}
-	log.Printf("saved config file, content: %#v", conf)
+	glg.Debug("saved config file, content: %#v", conf)
 	c.JSON(200, RespOK(nil))
 }
 
 func getConfigHandle(c *gin.Context) {
 	conf, err := config.ReadConfigFile()
 	if err != nil {
-		log.Println("get config file error:", err)
+		glg.Error("get config file error:", err)
 		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
 		return
 	}
-	c.JSON(200, RespOK(conf))
+
+	var res = make(map[string]interface{})
+	res["publicAccess"] = conf.PublicAccess
+	res["dashboardPassword"] = conf.DashboardPassword
+	c.JSON(200, RespOK(res))
 }
 
 func versionHandler(c *gin.Context) {
@@ -304,4 +409,62 @@ func isViaPrivate(c *gin.Context) {
 	}
 	r := util.IsPrivateIp(rIp)
 	c.JSON(200, RespOK(r))
+}
+
+func networkTestHandler(c *gin.Context) {
+	testLog := device.NetworkTest()
+	c.JSON(200, RespOK(testLog))
+}
+
+func loginHandler(c *gin.Context) {
+	b, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		c.Writer.WriteHeader(500)
+		return
+	}
+	if config.Config().Password == string(b) {
+		c.JSON(200, RespOK(GenToken()))
+	} else {
+		c.Writer.WriteHeader(700)
+	}
+}
+
+func passwordHandler(c *gin.Context) {
+	var requestData PasswordBody
+	err := json.NewDecoder(c.Request.Body).Decode(&requestData)
+	if err != nil {
+		c.JSON(400, RespBody{Code: 400, Message: "invalid request body for password"})
+		return
+	}
+	confFile := config.Config()
+
+	if confFile.Password == requestData.Password {
+		var newConfig config.ConfiFileData
+		newConfig.Password = requestData.NewPassword
+		newConfig.PublicAccess = confFile.PublicAccess
+		err = config.SaveConfigFile(newConfig)
+		if err != nil {
+			glg.Error("method SetPassword error:", err)
+			c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+			return
+		}
+		c.JSON(200, RespOK("ok"))
+	} else {
+		c.Writer.WriteHeader(700)
+	}
+}
+
+func downloadLogFile(c *gin.Context) {
+
+	filePath, err := diag.PackLogs()
+	if err != nil {
+		c.JSON(500, RespBody{Code: 500, Message: err.Error()})
+	}
+	//获取文件的名称
+	fileName := path.Base(filePath)
+	c.Header("Content-Type", "application/octet-stream")
+	c.Header("Content-Disposition", "attachment; url="+fileName)
+	c.Header("Content-Transfer-Encoding", "binary")
+	c.Header("Cache-Control", "no-cache")
+	c.File(filePath)
 }

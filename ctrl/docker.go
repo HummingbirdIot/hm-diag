@@ -2,9 +2,9 @@ package ctrl
 
 import (
 	"bufio"
-	"log"
 	"os/exec"
 
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/util"
 )
@@ -13,8 +13,8 @@ var dockerResetScript = "./docker_reset.sh"
 
 func DockerReset() {
 	fn := func() error {
-		log.Println("to reset docker")
-		log.Println("exec cmd: bash", dockerResetScript)
+		glg.Info("to reset docker")
+		glg.Debug("exec cmd: bash", dockerResetScript)
 		cmd := exec.Command("bash", dockerResetScript)
 		cmd.Dir = config.Config().GitRepoDir
 		p, err := cmd.StdoutPipe()
@@ -28,7 +28,7 @@ func DockerReset() {
 
 		in := bufio.NewScanner(p)
 		for in.Scan() {
-			log.Println("reset docker cmd output: ", in.Text())
+			glg.Info("reset docker cmd output: ", in.Text())
 		}
 		return nil
 	}

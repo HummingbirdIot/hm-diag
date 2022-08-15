@@ -3,8 +3,10 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"log"
+	"net"
 	"os"
+
+	"github.com/kpango/glg"
 )
 
 type CONF_BOOL int
@@ -16,17 +18,23 @@ const (
 )
 
 type GlobalConfig struct {
-	ApiPort       int
-	LanDevIntface string
-	MinerUrl      string
-	IntervalSec   uint
-	GitRepoDir    string
-	GitRepoUrl    string
-	PublicAccess  CONF_BOOL
+	ApiPort           int
+	LanDevIntface     string
+	MinerUrl          string
+	IntervalSec       uint
+	GitRepoDir        string
+	GitRepoUrl        string
+	PublicAccess      CONF_BOOL
+	Password          string
+	DashboardPassword bool
+	MinerGrpcUrl      string
+	LightHotspot      bool
 }
 
 type ConfiFileData struct {
-	PublicAccess CONF_BOOL `json:"publicAccess"`
+	PublicAccess      CONF_BOOL `json:"publicAccess"`
+	DashboardPassword bool      `json:"dashboardPassword"`
+	Password          string    `json:"password"`
 }
 
 const MAIN_SCRIPT = "./hummingbird_iot.sh"
@@ -42,14 +50,33 @@ func InitConf(cf GlobalConfig) {
 	conf = &cf
 	if cf.PublicAccess == CONF_DEFAULT {
 		confFile, err := ReadConfigFile()
-		log.Printf("read config file content: %#v", confFile)
+		glg.Infof("read config file content: %#v", confFile)
 		if err != nil {
-			log.Println(err)
+			glg.Error(err)
 			cf.PublicAccess = CONF_OFF
+			cf.DashboardPassword = false
 		} else {
 			conf.PublicAccess = confFile.PublicAccess
+			conf.DashboardPassword = confFile.DashboardPassword
 		}
+		checkPassword(confFile)
 	}
+}
+
+func checkPassword(confFile *ConfiFileData) {
+	if confFile == nil || confFile.Password == "" {
+		inet, err := net.InterfaceByName("eth0")
+		if err != nil {
+			conf.Password = "Hiot@2022"
+			fmt.Printf("fail to get net interfaces: %v\n", err)
+		} else {
+			conf.Password = inet.HardwareAddr.String()
+		}
+	} else {
+		glg.Debug("set hotspot password from config.json , password: ", confFile.Password)
+		conf.Password = confFile.Password
+	}
+	glg.Debug("hotspot password: ", conf.Password)
 }
 
 func Config() *GlobalConfig {
@@ -63,7 +90,7 @@ func ReadConfigFile() (*ConfiFileData, error) {
 	f, err := os.Open(CONF_ETC_FILE)
 	if err != nil {
 		if os.IsNotExist(err) {
-			log.Println("conf file is not exist")
+			glg.Debug("conf file is not exist")
 			return &ConfiFileData{PublicAccess: CONF_DEFAULT}, nil
 		}
 		return nil, fmt.Errorf("can't open config file %s", CONF_ETC_FILE)
@@ -87,5 +114,8 @@ func SaveConfigFile(conf ConfiFileData) error {
 	}
 	// update live config
 	Config().PublicAccess = conf.PublicAccess
+	Config().Password = conf.Password
+	Config().DashboardPassword = conf.DashboardPassword
+	checkPassword(&conf)
 	return nil
 }

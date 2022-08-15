@@ -4,12 +4,12 @@ package devdis
 
 import (
 	"fmt"
-	"log"
 	"net"
 	"time"
 
 	"github.com/godbus/dbus/v5"
 	"github.com/holoplot/go-avahi"
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/config"
 )
 
@@ -55,14 +55,14 @@ func Init() error {
 		dis = &DevDiscovery{Services: make(map[string]avahi.Service)}
 		l, err := net.Interfaces()
 		if err != nil {
-			log.Println("error getting interfaces", err)
+			glg.Error("error getting interfaces", err)
 			return err
 		}
 		for i, itf := range l {
-			log.Println("net interface", i+1, itf.Name)
+			glg.Info("net interface", i+1, itf.Name)
 			if itf.Name == config.Config().LanDevIntface {
 				dis.netInterfaceIndex = int32(i) + 1
-				log.Println("interface index:", i+1)
+				glg.Debug("interface index:", i+1)
 			}
 		}
 
@@ -70,35 +70,35 @@ func Init() error {
 		go func() {
 			err := dis.Register()
 			if err != nil {
-				log.Println("Discovery register error >>>>>>", err)
+				glg.Error("Discovery register error >>>>>>", err)
 			} else {
-				log.Println("Discovery register finished")
+				glg.Info("Discovery register finished")
 			}
 		}()
 		go func() {
 			err := dis.Browse()
 			if err != nil {
-				log.Println("Discovery browse error >>>>>>", err)
+				glg.Error("Discovery browse error >>>>>>", err)
 			} else {
-				log.Println("Discovery browse end")
+				glg.Info("Discovery browse end")
 			}
 		}()
-		log.Println("mdns inited discovery")
+		glg.Info("mdns inited discovery")
 
 		// retry register after some time
 		// when hostname is duplicated, avahi will retry different hostname
 		// assume avahi has got a stable hostname after some time
 		time.Sleep(time.Minute * 5)
-		log.Println("Discovery register retry")
+		glg.Info("Discovery register retry")
 		err = dis.Register()
 		if err != nil {
-			log.Println("Discovery register retry error >>>>>>", err)
+			glg.Error("Discovery register retry error >>>>>>", err)
 		} else {
-			log.Println("Discovery register retry finished")
+			glg.Info("Discovery register retry finished")
 		}
 
 	} else {
-		log.Println("do not init device discovery repeadly")
+		glg.Info("do not init device discovery repeadly")
 	}
 	return nil
 }
@@ -106,49 +106,49 @@ func Init() error {
 func (d *DevDiscovery) Register() error {
 	conn, err := dbus.SystemBus()
 	if err != nil {
-		log.Printf("Cannot get system bus: %v\n", err)
+		glg.Errorf("Cannot get system bus: %v\n", err)
 		return err
 	}
 
 	a, err := avahi.ServerNew(conn)
 	if err != nil {
-		log.Printf("Avahi new failed: %v\n", err)
+		glg.Errorf("Avahi new failed: %v\n", err)
 		return err
 	}
 
 	eg, err := a.EntryGroupNew()
 	if err != nil {
-		log.Printf("EntryGroupNew() failed: %v\n", err)
+		glg.Errorf("EntryGroupNew() failed: %v\n", err)
 		return err
 	}
 
 	hostname, err := a.GetHostName()
 	if err != nil {
-		log.Printf("GetHostName() failed: %v\n", err)
+		glg.Errorf("GetHostName() failed: %v\n", err)
 		return err
 	}
 
 	fqdn, err := a.GetHostNameFqdn()
 	if err != nil {
-		log.Printf("GetHostNameFqdn() failed: %v\n", err)
+		glg.Errorf("GetHostNameFqdn() failed: %v\n", err)
 		return err
 	}
 	txt := [][]byte{[]byte("cap=hm-diag"), []byte("other=xxx")}
-	log.Printf("Discovery registering hostname:%s service:%s fqdn:%s txt:%s\n",
+	glg.Infof("Discovery registering hostname:%s service:%s fqdn:%s txt:%s\n",
 		hostname, service, fqdn, txt)
 	err = eg.AddService(avahi.InterfaceUnspec, avahi.ProtoInet, 0, hostname, service, "local", fqdn, 80, txt)
 	if err != nil {
-		log.Printf("AddService() failed: %v\n", err)
+		glg.Errorf("AddService() failed: %v\n", err)
 		return err
 	}
 
 	err = eg.Commit()
 	if err != nil {
-		log.Printf("Commit() failed: %v\n", err)
+		glg.Errorf("Commit() failed: %v\n", err)
 		return err
 	}
 
-	log.Println("Discovery Entry published.")
+	glg.Info("Discovery Entry published.")
 
 	return nil
 }
@@ -156,47 +156,47 @@ func (d *DevDiscovery) Register() error {
 func (d *DevDiscovery) Browse() error {
 	conn, err := dbus.SystemBus()
 	if err != nil {
-		log.Printf("Cannot get system bus: %v\n", err)
+		glg.Errorf("Cannot get system bus: %v\n", err)
 		return err
 	}
 
 	server, err := avahi.ServerNew(conn)
 	if err != nil {
-		log.Printf("Avahi new failed: %v\n", err)
+		glg.Errorf("Avahi new failed: %v\n", err)
 		return err
 	}
 
 	host, err := server.GetHostName()
 	if err != nil {
-		log.Printf("GetHostName() failed: %v\n", err)
+		glg.Errorf("GetHostName() failed: %v\n", err)
 		return err
 	}
-	log.Println("GetHostName()", host)
+	glg.Info("GetHostName()", host)
 
 	fqdn, err := server.GetHostNameFqdn()
 	if err != nil {
-		log.Printf("GetHostNameFqdn() failed: %v\n", err)
+		glg.Errorf("GetHostNameFqdn() failed: %v\n", err)
 		return err
 	}
-	log.Println("GetHostNameFqdn()", fqdn)
+	glg.Info("GetHostNameFqdn()", fqdn)
 
 	s, err := server.GetAlternativeHostName(host)
 	if err != nil {
-		log.Printf("GetAlternativeHostName() failed: %v\n", err)
+		glg.Errorf("GetAlternativeHostName() failed: %v\n", err)
 		return err
 	}
-	log.Println("GetAlternativeHostName()", s)
+	glg.Info("GetAlternativeHostName()", s)
 
 	i, err := server.GetAPIVersion()
 	if err != nil {
-		log.Printf("GetAPIVersion() failed: %v\n", err)
+		glg.Errorf("GetAPIVersion() failed: %v\n", err)
 		return err
 	}
-	log.Println("GetAPIVersion()", i)
+	glg.Info("GetAPIVersion()", i)
 
 	sb, err := server.ServiceBrowserNew(avahi.InterfaceUnspec, avahi.ProtoUnspec, service, "local", 0)
 	if err != nil {
-		log.Printf("ServiceBrowserNew() failed: %v\n", err)
+		glg.Errorf("ServiceBrowserNew() failed: %v\n", err)
 		return err
 	}
 
@@ -205,15 +205,15 @@ func (d *DevDiscovery) Browse() error {
 	for {
 		select {
 		case service = <-sb.AddChannel:
-			log.Printf("Discovery service NEW: %#v\n", service)
-			log.Printf("Discovery net interface index compare  service=expect %d=%d\n",
+			glg.Infof("Discovery service NEW: %#v\n", service)
+			glg.Infof("Discovery net interface index compare  service=expect %d=%d\n",
 				service.Interface, d.netInterfaceIndex)
 			if service.Interface == d.netInterfaceIndex {
 				service, err := server.ResolveService(service.Interface, service.Protocol, service.Name,
 					service.Type, service.Domain, avahi.ProtoUnspec, 0)
 				key := fmt.Sprintf("%s.%s.%s", service.Name, service.Type, service.Domain)
 				if err == nil {
-					log.Println("Discovery service RESOLVED >>", service.Address)
+					glg.Info("Discovery service RESOLVED >>", service.Address)
 					// remove the service which has the same address
 					for k, v := range d.Services {
 						if v.Address == service.Address {
@@ -221,19 +221,19 @@ func (d *DevDiscovery) Browse() error {
 						}
 					}
 					d.Services[key] = service
-					log.Printf("Discovered service ADDED: %#v\n", service)
+					glg.Infof("Discovered service ADDED: %#v\n", service)
 				} else {
-					log.Println("Discovered service RESOLVE ERROR:", err)
+					glg.Error("Discovered service RESOLVE ERROR:", err)
 				}
 			}
 		case service = <-sb.RemoveChannel:
-			log.Println("Discovery sevice REMOVE: ", service)
-			log.Printf("Discovery net interface index compare  service=expect %d=%d\n",
+			glg.Infof("Discovery sevice REMOVE: ", service)
+			glg.Infof("Discovery net interface index compare  service=expect %d=%d\n",
 				service.Interface, d.netInterfaceIndex)
 			if service.Interface == d.netInterfaceIndex {
 				key := fmt.Sprintf("%s.%s.%s", service.Name, service.Type, service.Domain)
 				delete(d.Services, key)
-				log.Println("Discovery service REMOVED: ", service)
+				glg.Infof("Discovery service REMOVED: ", service)
 			}
 		}
 	}

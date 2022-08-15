@@ -3,13 +3,14 @@ package miner
 import (
 	_ "embed"
 	"fmt"
-	"log"
 	"os/exec"
 	"regexp"
 	"strings"
 	"time"
 
+	"github.com/kpango/glg"
 	"xdt.com/hm-diag/config"
+	"xdt.com/hm-diag/diag/grpc"
 	"xdt.com/hm-diag/diag/jsonrpc"
 	"xdt.com/hm-diag/util"
 )
@@ -68,25 +69,35 @@ type BaseInfo struct {
 	Location string `json:"location"`
 }
 
-func FetchData(url string) map[string]interface{} {
+func FetchData(url string, grpcUri string) map[string]interface{} {
 	// TODO 去掉 map，采用强类型
 
 	client := &jsonrpc.Client{Url: url}
 	resMap := make(map[string]interface{})
-	res, _ := client.Call("info_height", nil)
-	resMap["infoHeight"] = res.(map[string]interface{})["height"]
 
-	res, _ = client.Call("info_region", nil)
+	if config.Config().LightHotspot { //是否是轻节点
+		grpcClient := &grpc.Client{Url: grpcUri}
+		info, _ := grpcClient.GatewayInfo()
+		glg.Debug("from grpc get hotspot height:", info.Height)
+		resMap["infoHeight"] = info.Height
+
+		resMap["gatewayInfo"] = info
+	} else {
+		res, _ := client.Call("peer_book", PeerBookParams{Addr: "self"})
+		resMap["peerBook"] = util.ToLowerCamelObj(res)
+
+		res, _ = client.Call("info_p2p_status", nil)
+		resMap["infoP2pStatus"] = util.ToLowerCamelObj(res)
+
+		res, _ = client.Call("info_height", nil)
+		resMap["infoHeight"] = res.(map[string]interface{})["height"]
+	}
+
+	res, _ := client.Call("info_region", nil)
 	resMap["infoRegion"] = res.(map[string]interface{})["region"]
 
 	res, _ = client.Call("peer_addr", nil)
 	resMap["peerAddr"] = res.(map[string]interface{})["peer_addr"]
-
-	res, _ = client.Call("peer_book", PeerBookParams{Addr: "self"})
-	resMap["peerBook"] = util.ToLowerCamelObj(res)
-
-	res, _ = client.Call("info_p2p_status", nil)
-	resMap["infoP2pStatus"] = util.ToLowerCamelObj(res)
 
 	//res, _ = client.Call("info_summary", nil)
 	//resMap["infoSummary"] = util.ToLowerCamelObj(res)
@@ -101,7 +112,7 @@ func FetchData(url string) map[string]interface{} {
 
 	baseInfo, err := HotspotBaseInfo()
 	if err != nil {
-		log.Println("get hotspot base info error:", err)
+		glg.Error("get hotspot base info error:", err)
 	}
 
 	infoSummary := map[string]interface{}{
@@ -122,10 +133,16 @@ func FetchData(url string) map[string]interface{} {
 		upsec := int64(uptime.Seconds())
 		infoSummary["uptime"] = upsec
 	} else {
-		log.Println("get miner uptime error:", err)
+		glg.Error("get miner uptime error:", err)
 	}
 
 	return resMap
+}
+
+func GetPeerAddr(url string) string {
+	client := &jsonrpc.Client{Url: url}
+	res, _ := client.Call("peer_addr", nil)
+	return res.(map[string]interface{})["peer_addr"].(string)
 }
 
 func FirmwareVersion() (string, error) {
@@ -163,7 +180,7 @@ func Uptime() (time.Duration, error) {
 			str = str[:19] // remove ms、zone
 			t, err := util.ParseTimeInLocation("UTC", "2006-01-02T15:04:05", str)
 			if err != nil {
-				log.Println("get miner start time error", err)
+				glg.Error("get miner start time error", err)
 				return 0, err
 			} else {
 				startedAt = t
@@ -177,7 +194,7 @@ func Uptime() (time.Duration, error) {
 
 func PacketForwardVersion() (string, error) {
 	resultPre := ">>>result:"
-	log.Println("exec cmd:", config.MAIN_SCRIPT, "pktfwdVersion")
+	glg.Debug("exec cmd:", config.MAIN_SCRIPT, "pktfwdVersion")
 	cmd := exec.Command(config.MAIN_SCRIPT, "pktfwdVersion")
 	cmd.Dir = config.Config().GitRepoDir
 	out, err := cmd.Output()

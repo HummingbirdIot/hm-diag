@@ -2,12 +2,12 @@
 package ctrl
 
 import (
-	"log"
 	"os/exec"
 	"sync/atomic"
 	"time"
 
 	"github.com/godbus/dbus/v5"
+	"github.com/kpango/glg"
 )
 
 type RGBColor struct {
@@ -17,9 +17,9 @@ type RGBColor struct {
 }
 
 func RebootDevice() error {
-	log.Println("to reboot device")
+	glg.Info("to reboot device")
 	go func() { exec.Command("reboot").Run() }()
-	log.Println("sent reboot device cmd")
+	glg.Info("sent reboot device cmd")
 	return nil
 }
 
@@ -38,7 +38,7 @@ func SetDeviceLightBlink(durSec uint8) error {
 	go func() {
 		canRun := atomic.CompareAndSwapInt32(&lightBlinking, 0, 1)
 		if !canRun {
-			log.Println("give up setting light blinking, cause it is blinking")
+			glg.Info("give up setting light blinking, cause it is blinking")
 			return
 		}
 		defer func() {
@@ -53,7 +53,7 @@ func SetDeviceLightBlink(durSec uint8) error {
 				err = SetDeviceLightColor(colorB)
 			}
 			if err != nil {
-				log.Println("set device light color error: ", err)
+				glg.Error("set device light color error: ", err)
 				break
 			}
 			time.Sleep(interval)
@@ -92,6 +92,6 @@ func DeviceLightColor() (*RGBColor, error) {
 		G: v[1].(uint8),
 		B: v[2].(uint8),
 	}
-	log.Println("get device color:", c)
+	glg.Info("get device color:", c)
 	return &c, nil
 }

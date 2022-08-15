@@ -3,11 +3,11 @@ package link
 import (
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"strings"
 
+	"github.com/kpango/glg"
 	"github.com/pkg/errors"
 	"xdt.com/hm-diag/config"
 	"xdt.com/hm-diag/link/message"
@@ -17,7 +17,7 @@ func requestLocal(mr *message.HttpRequest) (*message.HttpResponse, error) {
 	rd := mr.Data
 	// for security reasons, only support request http api on the server
 	urlStr := LocalHost() + rd.URL
-	log.Printf("rpc to %v", urlStr)
+	glg.Infof("rpc to %v", urlStr)
 	u, err := url.Parse(urlStr)
 	if err != nil {
 		return nil, errors.WithMessage(err, "invalid url "+rd.URL)
