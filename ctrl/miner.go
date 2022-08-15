@@ -2,6 +2,7 @@ package ctrl
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -28,10 +29,24 @@ const (
 	restartMinerCmd  = config.MAIN_SCRIPT + " restartMiner"
 )
 
+var (
+	onboardingCmd = "docker exec hnt_iot_helium-miner_1 /opt/miner/lib/miner-0.1.0/priv/gateway_rs/helium_gateway -c /opt/miner/lib/miner-0.1.0/priv/gateway_rs/ add --owner {owner} --payer {payer} --mode light"
+)
+
 type SnapshotStateRes struct {
 	File  string    `json:"file"`
 	State string    `json:"state"`
 	Time  time.Time `json:"time"`
+}
+
+type onboardingCliResp struct {
+	Address     string `json:"address"`
+	Fee         int64  `json:"fee"`
+	Mode        string `json:"mode"`
+	Owner       string `json:"owner"`
+	Payer       string `json:"payer"`
+	Staking_fee int64  `json:"staking fee"`
+	Txn         string `json:"txn"`
 }
 
 func ResyncMiner() error {
@@ -208,24 +223,41 @@ func GenOnboardingTxn(ownerAddr string, payerAddr string) (string, error) {
 	if ownerAddr == "" || payerAddr == "" {
 		return "", fmt.Errorf("ownerAddr and payerAddr must be provided")
 	}
-	jrClient := jsonrpc.Client{Url: config.Config().MinerUrl}
-
-	re, err := jrClient.Call("txn_add_gateway", map[string]string{
-		"owner": ownerAddr,
-		"payer": payerAddr,
-	})
+	glg.Info(ownerAddr, payerAddr)
+	var out bytes.Buffer
+	onboardingCmd = strings.Replace(onboardingCmd, "{owner}", ownerAddr, 1)
+	onboardingCmd = strings.Replace(onboardingCmd, "{payer}", payerAddr, 1)
+	cmd := exec.Command("bash", "-c", onboardingCmd)
+	cmd.Stdout = &out
+	err := cmd.Run()
 	if err != nil {
 		return "", err
 	}
-	result, ok := re.(map[string]interface{})
-	if !ok {
-		return "", fmt.Errorf("miner txn add gateway request result error: %#v", re)
+	var resp onboardingCliResp
+	err = json.NewDecoder(&out).Decode(&resp)
+	if err != nil {
+		return "", err
 	}
-	txn, ok := result["result"].(string)
-	if !ok {
-		return "", fmt.Errorf("miner txn add gateway request result error: %#v", result)
-	}
-	return txn, nil
+	glg.Infof("%+v", resp)
+	return resp.Txn, nil
+	// jrClient := jsonrpc.Client{Url: config.Config().MinerUrl}
+
+	// re, err := jrClient.Call("txn_add_gateway", map[string]string{
+	// 	"owner": ownerAddr,
+	// 	"payer": payerAddr,
+	// })
+	// if err != nil {
+	// 	return "", err
+	// }
+	// result, ok := re.(map[string]interface{})
+	// if !ok {
+	// 	return "", fmt.Errorf("miner txn add gateway request result error: %#v", re)
+	// }
+	// txn, ok := result["result"].(string)
+	// if !ok {
+	// 	return "", fmt.Errorf("miner txn add gateway request result error: %#v", result)
+	// }
+	// return txn, nil
 }
 
 func GenAssertLocationTxn(ownerAddr, payerAddr, location string, nonce int) (string, error) {

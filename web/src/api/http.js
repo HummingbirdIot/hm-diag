@@ -34,7 +34,7 @@ export function getBase() {
   }
 }
 
-const client = axios.create({ baseURL: getBase() });
+const client = axios.create({ baseURL: getBase(), timeout: 10 * 1000 });
 
 client.interceptors.request.use(
   (req) => {
